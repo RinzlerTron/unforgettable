@@ -1,0 +1,11 @@
+{
+  "setup_lines": [
+    "Hello. My name is Priya and I live in Singapore.",
+    "My cat is called Miso and I am allergic to peanuts.",
+    "Remind me to renew my passport next week."
+  ],
+  "probes": [
+    {"ask": "What is my name?", "expect_in_reply": "priya"},
+    {"ask": "What do you remember about me?", "expect_in_reply": "miso"}
+  ]
+}

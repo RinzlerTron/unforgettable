@@ -1,0 +1,32 @@
+[
+  {
+    "text": "Hi there. My name is Priya and I live in Singapore.",
+    "expected_fact_subjects": ["user.name", "user.location"],
+    "expected_tasks": []
+  },
+  {
+    "text": "My cat is called Miso and I am allergic to peanuts.",
+    "expected_fact_subjects": ["user.cat", "user.health"],
+    "expected_tasks": []
+  },
+  {
+    "text": "Remind me to renew my passport next week.",
+    "expected_fact_subjects": [],
+    "expected_tasks": ["renew my passport next week"]
+  },
+  {
+    "text": "I work at Standard Chartered and I really like laksa.",
+    "expected_fact_subjects": ["user.work", "user.preference"],
+    "expected_tasks": []
+  },
+  {
+    "text": "What is the weather like today?",
+    "expected_fact_subjects": [],
+    "expected_tasks": []
+  },
+  {
+    "text": "Don't let me forget to email the landlord, and add a todo: book flights to Chennai",
+    "expected_fact_subjects": [],
+    "expected_tasks": ["email the landlord", "book flights to Chennai"]
+  }
+]
