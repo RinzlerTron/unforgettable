@@ -1,0 +1,17 @@
+# Database driver (CockroachDB speaks the PostgreSQL wire protocol)
+psycopg[binary]==3.2.9
+
+# Web UI (minimal chat front-end + JSON API)
+fastapi==0.115.12
+uvicorn==0.34.2
+
+# LLM providers (both optional at runtime; MEM_LLM=off needs neither)
+boto3==1.38.27          # AWS Bedrock: Claude models + Titan embeddings
+anthropic==0.52.0       # Direct Anthropic API mode
+
+# Configuration
+python-dotenv==1.1.0    # loads .env into the environment
+
+# Tests
+pytest==8.3.5
+httpx==0.28.1           # FastAPI test client transport

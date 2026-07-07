@@ -1,0 +1,16 @@
+# Local working files and AI context (never committed)
+local/
+CLAUDE.md
+
+# Generated output (safe to delete and regenerate)
+data/
+
+# Environment and secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+.venv/
