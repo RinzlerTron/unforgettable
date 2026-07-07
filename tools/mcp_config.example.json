@@ -1,0 +1,12 @@
+{
+  "_comment": "CockroachDB Cloud managed MCP server config. Copy into your MCP client config (Claude Code: .mcp.json; Cursor: mcp.json) to inspect the agent's memory tables directly - read-only by default, with full audit logging on the CockroachDB Cloud side. Generate the exact snippet (with your cluster id and credentials) from the Connect dialog in the CockroachDB Cloud Console. Useful judge trick: ask your MCP-connected editor 'show the facts table in the unforgettable database' and watch the agent's memory, provenance included.",
+  "mcpServers": {
+    "cockroachdb": {
+      "type": "http",
+      "url": "https://cockroachlabs.cloud/mcp",
+      "headers": {
+        "Authorization": "Bearer ${COCKROACH_CLOUD_API_KEY}"
+      }
+    }
+  }
+}
