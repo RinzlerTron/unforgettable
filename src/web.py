@@ -114,6 +114,8 @@ PAGE = """<!DOCTYPE html>
   #log { flex: 1; overflow-y: auto; padding-right: 8px; }
   .msg { margin: 8px 0; padding: 10px 12px; border-radius: 8px;
          max-width: 80%; white-space: pre-wrap; }
+  .msg .time { display: block; font-size: 10px; color: #9fb3c8;
+               opacity: 0.8; margin-top: 6px; text-align: right; }
   .user { background: #2b6cb0; margin-left: auto; }
   .agent { background: #1f242c; cursor: pointer; }
   .agent:hover { outline: 1px solid #4a5361; }
@@ -154,7 +156,13 @@ PAGE = """<!DOCTYPE html>
   <h2>Cluster</h2>
   <div class="item">Serving node: <span id="node">?</span>
     <span id="totals" class="note"></span></div>
+  <h2>Current beliefs</h2>
+  <div id="beliefs" class="note">Nothing yet - teach the agent something.</div>
   <h2>Time travel</h2>
+  <div class="row">
+    <button onclick="preset(300)">Diff last 5 min</button>
+    <button onclick="presetSincePageLoad()">Diff since page load</button>
+  </div>
   <div class="row">
     <input type="datetime-local" id="t1" step="1">
     <button onclick="beliefsAt()">Beliefs at t1</button>
@@ -163,6 +171,9 @@ PAGE = """<!DOCTYPE html>
     <input type="datetime-local" id="t2" step="1">
     <button onclick="diffBeliefs()">Diff t1 to t2</button>
   </div>
+  <div class="note">t1 and t2 are two moments; the diff shows which beliefs
+  changed between them. Message times are on each chat bubble, and each
+  belief above shows when it started being true - use those to aim t1/t2.</div>
   <div class="note">Tip: click any agent reply to see the memories it used.</div>
   <h2 id="paneltitle">Recalled this turn</h2>
   <div id="panel" class="note">Nothing yet.</div>
@@ -178,8 +189,28 @@ function nowLocal(offsetSeconds) {
     pad(d.getDate()) + "T" + pad(d.getHours()) + ":" +
     pad(d.getMinutes()) + ":" + pad(d.getSeconds());
 }
+const pageLoadedAt = nowLocal(0);
 document.getElementById("t1").value = nowLocal(-60);
 document.getElementById("t2").value = nowLocal(0);
+
+function clock() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" +
+    pad(d.getSeconds());
+}
+
+function preset(seconds) {
+  document.getElementById("t1").value = nowLocal(-seconds);
+  document.getElementById("t2").value = nowLocal(0);
+  diffBeliefs();
+}
+
+function presetSincePageLoad() {
+  document.getElementById("t1").value = pageLoadedAt;
+  document.getElementById("t2").value = nowLocal(0);
+  diffBeliefs();
+}
 
 function esc(text) {
   const div = document.createElement("div");
@@ -191,12 +222,37 @@ function add(role, text, episodeId) {
   const div = document.createElement("div");
   div.className = "msg " + role;
   div.textContent = text;
+  const stamp = document.createElement("span");
+  stamp.className = "time";
+  stamp.textContent = clock();
+  div.appendChild(stamp);
   if (role === "agent" && episodeId) {
     div.title = "Click to see why the agent said this";
     div.onclick = () => explain(episodeId);
   }
   document.getElementById("log").appendChild(div);
   div.scrollIntoView();
+}
+
+async function refreshBeliefs() {
+  // Read the belief state as of two seconds ago so the query stays on the
+  // fast AS OF SYSTEM TIME path (which needs a timestamp in the past).
+  const at = new Date(Date.now() - 2000).toISOString();
+  try {
+    const response = await fetch("/api/beliefs?at=" + encodeURIComponent(at));
+    const data = await response.json();
+    const parts = data.beliefs.map(b => {
+      const since = new Date(b.valid_from);
+      const pad = n => String(n).padStart(2, "0");
+      const label = pad(since.getHours()) + ":" + pad(since.getMinutes()) +
+        ":" + pad(since.getSeconds());
+      return '<div class="item">' + esc(b.content) +
+        ' <span class="score">since ' + label + '</span></div>';
+    });
+    document.getElementById("beliefs").innerHTML = parts.length ?
+      parts.join("") :
+      '<span class="note">Nothing yet - teach the agent something.</span>';
+  } catch (err) { /* panel is best-effort */ }
 }
 
 function setPanel(title, html) {
@@ -223,6 +279,7 @@ async function send() {
       data.node_id === null ? "?" : "node " + data.node_id;
     renderRecalled(data.recalled);
     refreshTotals();
+    setTimeout(refreshBeliefs, 2100);
   } catch (err) {
     add("agent", "[connection error: " + err + " - the client fails over " +
         "to a surviving node on the next message]");
@@ -251,7 +308,8 @@ async function beliefsAt() {
   const data = await response.json();
   const parts = data.beliefs.map(b =>
     '<div class="item">' + esc(b.content) +
-    ' <span class="score">(' + b.confidence.toFixed(2) + ')</span></div>');
+    ' <span class="score">(' + b.confidence.toFixed(2) + ', held since ' +
+    new Date(b.valid_from).toLocaleTimeString() + ')</span></div>');
   setPanel("Beliefs at " + at + " via " + data.mechanism,
     parts.length ? parts.join("") :
     '<span class="note">The agent believed nothing at that moment.</span>');
@@ -319,6 +377,7 @@ async function refreshTotals() {
 document.getElementById("input").addEventListener("keydown",
   e => { if (e.key === "Enter") send(); });
 refreshTotals();
+refreshBeliefs();
 </script>
 </body>
 </html>

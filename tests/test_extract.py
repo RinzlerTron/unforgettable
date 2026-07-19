@@ -45,3 +45,17 @@ def test_duplicate_facts_deduped_within_message():
     facts = extract.extract_facts("My name is Priya. My name is Priya.")
     names = [f for f in facts if f["subject"] == "user.name"]
     assert len(names) == 1
+
+
+def test_value_stops_at_sentence_boundary():
+    facts = extract.extract_facts(
+        "my cat is called Miso. Remind me to renew my passport")
+    cats = [f for f in facts if f["subject"] == "user.cat"]
+    assert cats and cats[0]["content"] == "The user's cat is Miso."
+
+
+def test_value_stops_at_new_clause_with_my():
+    facts = extract.extract_facts(
+        "I live in Singapore, my cat is called Miso")
+    homes = [f for f in facts if f["subject"] == "user.location"]
+    assert homes and homes[0]["content"] == "The user lives in Singapore."

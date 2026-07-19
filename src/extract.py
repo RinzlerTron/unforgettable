@@ -56,6 +56,12 @@ _VALUE_STOP_WORDS = {"and", "but", "or", "so", "because", "while", "since",
 
 
 def _clean(value):
+    # A value never crosses a sentence boundary ("Miso. Remind me to..."
+    # is the cat's name plus the start of the next sentence), nor a
+    # ", my ..." clause ("Singapore, my cat is called Miso"). Task titles
+    # are unaffected: their patterns already stop at commas and periods.
+    value = re.split(r"[.!?](?=\s|$)", value)[0]
+    value = re.split(r",\s*my\b", value, flags=re.I)[0]
     value = re.sub(r"\s+", " ", value).strip(" .,'")
     kept = []
     for word in value.split(" "):
