@@ -22,9 +22,12 @@ REGION="${REGION:-us-east-1}"
 SQL_USER="${SQL_USER:-memory_agent}"
 
 echo "== Creating Basic cluster '${CLUSTER_NAME}' on AWS ${REGION}"
-ccloud cluster create basic "${CLUSTER_NAME}" \
+# Syntax verified against ccloud 0.8.23: regions are positional args
+# (there is no --regions flag); --wait blocks until the cluster is
+# ready so the user-create step below cannot race provisioning.
+ccloud cluster create basic "${CLUSTER_NAME}" "${REGION}" \
     --cloud AWS \
-    --regions "${REGION}"
+    --wait
 
 echo "== Creating SQL user '${SQL_USER}' (password will be printed once)"
 ccloud cluster user create "${CLUSTER_NAME}" "${SQL_USER}"
