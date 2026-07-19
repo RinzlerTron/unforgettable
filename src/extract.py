@@ -30,6 +30,8 @@ _FACT_PATTERNS = [
      "user.work", "The user is a {0}."),
     (re.compile(r"\bmy (\w{2,30}) is (?:called |named )?([A-Za-z0-9][A-Za-z0-9 .'-]{0,60})", re.I),
      "user.attribute", None),  # handled specially below
+    (re.compile(r"\bmy (\w{2,30})'s name is ([A-Za-z0-9][A-Za-z0-9 .'-]{0,60})", re.I),
+     "user.attribute", None),  # "my cat's name is Miso"
     (re.compile(r"\bi (?:really )?(love|like|prefer|enjoy) ([a-z0-9][a-z0-9 .,'-]{1,80})", re.I),
      "user.preference", "The user {0}s {1}." ),
     (re.compile(r"\bi (?:hate|dislike|can't stand|cannot stand) ([a-z0-9][a-z0-9 .,'-]{1,80})", re.I),

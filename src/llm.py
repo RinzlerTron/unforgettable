@@ -190,7 +190,14 @@ class ScriptedClient:
                 return "Hello again. {0}".format(name_fact)
             return "Hello. I am Unforgettable; everything you tell me is remembered."
 
-        return "Understood. I have recorded that in my episodic memory."
+        # Nothing matched the conservative patterns: be transparent
+        # about what was and was not stored, instead of implying a
+        # belief was formed.
+        return ("Stored as an episode, but I did not extract a durable "
+                "belief from that. In this zero-key scripted mode I only "
+                "recognize simple statements like 'my cat is called Miso' "
+                "or 'I live in Singapore'; in Bedrock/Anthropic mode "
+                "Claude does the extraction and understands free phrasing.")
 
     def extract_facts(self, text):
         return extract.extract_facts(text)
