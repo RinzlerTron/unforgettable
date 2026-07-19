@@ -1,5 +1,5 @@
 # Database driver (CockroachDB speaks the PostgreSQL wire protocol)
-psycopg[binary]==3.2.9
+psycopg[binary]==3.2.13
 
 # Web UI (minimal chat front-end + JSON API)
 fastapi==0.115.12
