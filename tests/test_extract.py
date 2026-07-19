@@ -59,3 +59,9 @@ def test_value_stops_at_new_clause_with_my():
         "I live in Singapore, my cat is called Miso")
     homes = [f for f in facts if f["subject"] == "user.location"]
     assert homes and homes[0]["content"] == "The user lives in Singapore."
+
+
+def test_value_drops_trailing_time_phrase():
+    facts = extract.extract_facts("Actually I moved to Chennai last month")
+    homes = [f for f in facts if f["subject"] == "user.location"]
+    assert homes and homes[0]["content"] == "The user lives in Chennai."

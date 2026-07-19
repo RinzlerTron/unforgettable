@@ -50,7 +50,7 @@ Then interactively (`./run.sh web`, after starting a node per
 3. Click any agent reply to see its decision audit: which memory rows it
    used and which message taught each fact.
 
-Manual fallback: `./run.sh test` (44 tests, self-starts a disposable
+Manual fallback: `./run.sh test` (45 tests, self-starts a disposable
 CockroachDB node). Default mode is `MEM_LLM=off` - a deterministic
 scripted client that exercises the full memory pipeline; set
 `MEM_LLM=bedrock` for Claude on AWS Bedrock (see docs/DEPLOYMENT.md).
@@ -73,8 +73,25 @@ Detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Node killed mid-conversation | 0 memories lost; failover on the next statement (chaos demo asserts it) |
 | Time travel | Belief state at any past moment; AS OF SYSTEM TIME inside the GC window, bitemporal columns forever |
 | Decision audit | 100% of replies traceable to the exact memory rows used and the messages that taught them |
-| Test suite | 44 tests against a real CockroachDB node |
+| Test suite | 45 tests against a real CockroachDB node |
 | Keys needed for the full demo | none (scripted mode + local embeddings) |
+
+The console in action (all four are live captures of `./run.sh web`):
+
+*Teach it facts; every belief shows when it started being true.*
+![Chat with the current-beliefs panel](docs/img/1-chat-and-beliefs.png)
+
+*"Actually I moved to Chennai" — the diff shows exactly which belief
+flipped, with before/after confidence.*
+![Belief diff after a flip](docs/img/2-belief-diff.png)
+
+*Click any reply: which memory rows it used, and which message taught
+each fact.*
+![Per-reply decision audit](docs/img/3-decision-audit.png)
+
+*Rewind to before the move: the agent's Singapore-era belief state,
+served by AS OF SYSTEM TIME.*
+![Time-travel rewind](docs/img/4-time-travel-rewind.png)
 
 ## Challenge Compliance
 
@@ -88,7 +105,7 @@ Detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Agentic Memory Design | Episodic + semantic + task memory with confidence and provenance; consolidation job distills episodes into beliefs; append-only versioning makes belief history first-class |
 | Technical Implementation | Native AS OF SYSTEM TIME, vector indexes, JSONB provenance, SQLSTATE 40001 retries, multi-node client failover, transactional versioning |
 | Real-World Impact | Memory audit and debugging: "what did the agent believe when it did that, and why" - the missing tool for agents in production |
-| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only, 44 tests |
+| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only, 45 tests |
 | Creativity & Originality | Time-travel memory: rewind, belief diff, and per-reply decision audit built directly on CockroachDB primitives |
 
 ## Limitations
@@ -124,7 +141,7 @@ Deliberate scope decisions, not gaps we missed:
     ├── chat_cli.py      # terminal chat
     └── web.py           # web chat + time-travel console
     tools/               # chaos_demo.py, ccloud_deploy.sh, MCP config
-    tests/               # 44 tests + fixtures (real saved inputs)
+    tests/               # 45 tests + fixtures (real saved inputs)
     docs/                # ARCHITECTURE.md, DEPLOYMENT.md
 
 ## Author

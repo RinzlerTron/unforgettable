@@ -51,21 +51,26 @@ _ATTRIBUTE_STOPLIST = {
 }
 
 # A captured value ends where a new clause begins ("Priya and I live in...").
-_VALUE_STOP_WORDS = {"and", "but", "or", "so", "because", "while", "since",
-                     "i", "im", "also", "which", "who", "though"}
+_CLAUSE_STOP_WORDS = {"and", "but", "or", "so", "because", "while", "since",
+                      "i", "im", "also", "which", "who", "though"}
+# Fact values additionally shed trailing time phrases ("moved to Chennai
+# last month" -> Chennai). Task titles keep them ("renew my passport
+# next week" is the whole task).
+_TIME_STOP_WORDS = {"last", "next", "this", "yesterday", "today",
+                    "tomorrow", "recently"}
+_VALUE_STOP_WORDS = _CLAUSE_STOP_WORDS | _TIME_STOP_WORDS
 
 
-def _clean(value):
+def _clean(value, stop_words=_VALUE_STOP_WORDS):
     # A value never crosses a sentence boundary ("Miso. Remind me to..."
     # is the cat's name plus the start of the next sentence), nor a
-    # ", my ..." clause ("Singapore, my cat is called Miso"). Task titles
-    # are unaffected: their patterns already stop at commas and periods.
+    # ", my ..." clause ("Singapore, my cat is called Miso").
     value = re.split(r"[.!?](?=\s|$)", value)[0]
     value = re.split(r",\s*my\b", value, flags=re.I)[0]
     value = re.sub(r"\s+", " ", value).strip(" .,'")
     kept = []
     for word in value.split(" "):
-        if word.lower().strip(".,'") in _VALUE_STOP_WORDS:
+        if word.lower().strip(".,'") in stop_words:
             break
         kept.append(word)
     return " ".join(kept).strip(" .,'")
@@ -106,7 +111,7 @@ def extract_tasks(text):
     titles = []
     for pattern in _TASK_PATTERNS:
         for match in pattern.finditer(text):
-            title = _clean(match.group(1))
+            title = _clean(match.group(1), stop_words=_CLAUSE_STOP_WORDS)
             if title and title not in titles:
                 titles.append(title)
     return titles
