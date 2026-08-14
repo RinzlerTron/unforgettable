@@ -30,6 +30,24 @@ Prerequisites: Python 3.10+, curl.
 Defaults (`MEM_LLM=off`, `MEM_EMBEDDINGS=local`) need no keys: the scripted
 client exercises the full memory pipeline deterministically.
 
+## Path 1b - Docker, one command
+
+Prerequisites: Docker with the compose plugin.
+
+    git clone <this repo> unforgettable && cd unforgettable
+    docker compose up --build     # agent + one CockroachDB node
+                                  # web UI: http://localhost:8400
+
+The recipe is the repo's `Dockerfile` and `compose.yaml` - read them first
+if you like; the app container is the same stateless process as Path 1.
+Restore the clean seeded demo state at any time:
+
+    docker compose exec app ./run.sh reset-demo
+
+The same image is the AWS deployment artifact: run it on ECS, App Runner,
+or EC2 with `MEM_DB_URLS` pointing at CockroachDB Cloud (path 2) and the
+Bedrock env vars (path 3); give the task role Bedrock invoke permissions.
+
 ## Path 2 - CockroachDB Cloud (the judged configuration)
 
 Prerequisites: ccloud CLI (https://www.cockroachlabs.com/docs/cockroachcloud/ccloud-get-started),

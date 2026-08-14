@@ -1,0 +1,51 @@
+# One-command local demo: the agent plus a single CockroachDB node, in the
+# zero-key scripted mode (no accounts, no API keys).
+#
+#   docker compose up --build      then open http://localhost:8400
+#
+# Restore the clean seeded demo state at any time:
+#
+#   docker compose exec app ./run.sh reset-demo
+#
+# For the Bedrock (real LLM) configuration, add the env vars from
+# docs/DEPLOYMENT.md path 3 to the app service below.
+
+services:
+  cockroach:
+    image: cockroachdb/cockroach:v25.2.2
+    command: start-single-node --insecure
+    ports:
+      - "26257:26257"   # SQL, handy for `cockroach sql` from the host
+      - "8080:8080"     # CockroachDB admin UI
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--insecure", "-e", "SELECT 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: create the database, then exit.
+  cockroach-init:
+    image: cockroachdb/cockroach:v25.2.2
+    depends_on:
+      cockroach:
+        condition: service_healthy
+    entrypoint:
+      - cockroach
+      - sql
+      - --insecure
+      - --host
+      - cockroach:26257
+      - -e
+      - CREATE DATABASE IF NOT EXISTS unforgettable
+
+  app:
+    build: .
+    depends_on:
+      cockroach-init:
+        condition: service_completed_successfully
+    environment:
+      MEM_DB_URLS: postgresql://root@cockroach:26257/unforgettable?sslmode=disable
+      MEM_LLM: "off"
+      MEM_EMBEDDINGS: local
+    ports:
+      - "8400:8400"

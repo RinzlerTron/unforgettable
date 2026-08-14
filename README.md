@@ -48,6 +48,10 @@ what it does; nothing installs system-wide or runs unseen:
     #    failure. Ends with "RESULT: PASS" and tears the cluster down.
     ./run.sh chaos
 
+Have Docker instead? `docker compose up --build` starts the web demo with
+one command - the recipe is two short readable files
+([Dockerfile](Dockerfile) + [compose.yaml](compose.yaml)), no hidden steps.
+
 Then interactively (`./run.sh web`, after starting a node per
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) try:
 
