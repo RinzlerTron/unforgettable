@@ -30,13 +30,23 @@ losing a thing.
 
 ## Try It (For Judges)
 
-Running locally in about 3 minutes, zero accounts or keys:
+Running locally in about 3 minutes, zero accounts or keys. Each step says
+what it does; nothing installs system-wide or runs unseen:
 
+    # 1) CockroachDB binary - one tarball, extracted into this directory
+    #    (macOS/Windows tarballs: cockroachlabs.com/docs/releases)
     curl -s https://binaries.cockroachdb.com/cockroach-v25.2.2.linux-amd64.tgz | tar xz
     export PATH="$PWD/cockroach-v25.2.2.linux-amd64:$PATH"
+
+    # 2) The project + pinned dependencies, in a project-local venv
     git clone <repo-url> unforgettable && cd unforgettable
     ./run.sh setup
-    ./run.sh chaos      # 3-node cluster, conversation, node kill, verdict
+
+    # 3) The headline demo: starts a local 3-node cluster, holds a
+    #    conversation, SIGKILLs the node the agent is talking to, then
+    #    proves row-exact memory survival and time travel across the
+    #    failure. Ends with "RESULT: PASS" and tears the cluster down.
+    ./run.sh chaos
 
 Then interactively (`./run.sh web`, after starting a node per
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) try:
@@ -57,14 +67,44 @@ scripted client that exercises the full memory pipeline; set
 
 ## Architecture
 
-    Agent (FastAPI/CLI, stateless) --- SQL ---> CockroachDB cluster
-      recall -> respond -> remember            episodes | facts (append-only
-      Bedrock Claude / Anthropic / scripted    versions) | tasks | recall_traces
-      time-travel API                          VECTOR indexes, JSONB, AOST
-                 |
-                 +--> AWS Bedrock (Claude Converse API, Titan embeddings)
+```mermaid
+flowchart LR
+    UI["Web UI / CLI<br/>chat + time-travel console"]
 
-Detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+    subgraph AGENT["Agent process (Python, stateless)"]
+        direction TB
+        RC["recall.py<br/>vector + keyword + recency"]
+        LL["llm.py<br/>Bedrock | Anthropic | scripted"]
+        MS["memory_store.py<br/>validated, versioned writes"]
+        TT["timetravel.py<br/>beliefs_at / diff / explain"]
+    end
+
+    subgraph CRDB["CockroachDB cluster (survives node loss)"]
+        direction TB
+        EP[("episodes<br/>VECTOR(256) + JSONB")]
+        FA[("facts<br/>append-only versions:<br/>valid_from / superseded_at / replaces_id")]
+        TA[("tasks")]
+        TR[("recall_traces<br/>decision audit")]
+    end
+
+    BED["AWS Bedrock<br/>Claude Converse API<br/>Titan Text Embeddings V2"]
+
+    UI --> AGENT
+    RC -->|"ORDER BY embedding <=> query<br/>(distributed vector index)"| EP
+    RC --> FA
+    MS --> EP
+    MS --> FA
+    MS --> TA
+    MS --> TR
+    TT -->|"AS OF SYSTEM TIME /<br/>version reconstruction"| FA
+    TT --> TR
+    LL --> BED
+```
+
+Every arrow into the cluster is plain SQL; the agent process holds no
+state, so killing it (or the node under it) loses nothing. Detail and a
+turn-by-turn sequence diagram in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Results
 

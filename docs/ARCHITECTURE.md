@@ -48,6 +48,34 @@ Every fact carries `provenance` (JSONB): the method that produced it
 (turn extraction, LLM extraction, consolidation) and the episode ids that
 taught it - so any belief traces back to the exact message it came from.
 
+## One agent turn
+
+Every step is a SQL round trip; the process could die between any two of
+them and the memory written so far survives.
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as agent.py
+    participant R as recall.py
+    participant L as LLM backend
+    participant C as CockroachDB
+
+    U->>A: message
+    A->>R: recall(query, conversation)
+    R->>C: vector top-k (episodes, facts) + keyword + recent turns
+    C-->>R: candidate rows
+    R-->>A: MemoryBundle, re-ranked (similarity + recency + keywords)
+    A->>C: INSERT episode (user message, embedded)
+    A->>C: INSERT fact versions (extracted, with provenance)
+    A->>C: INSERT / dedupe tasks
+    A->>L: system prompt + MEMORY section + history
+    L-->>A: reply
+    A->>C: INSERT episode (reply)
+    A->>C: INSERT recall_trace (decision audit for this reply)
+    A-->>U: reply + what was recalled
+```
+
 ## Time travel (the headline)
 
 `src/timetravel.py` exposes three operations, all pure SQL:

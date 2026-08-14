@@ -1,7 +1,5 @@
-# Local working files and AI context (never committed)
+# Local working files (never committed)
 local/
-CLAUDE.md
-README_Simple.md
 
 # Generated output (safe to delete and regenerate)
 data/
