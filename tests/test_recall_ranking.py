@@ -1,5 +1,6 @@
 """Recall ranking: the pure scoring function and end-to-end DB retrieval."""
 
+import config
 import recall
 from memory_store import MemoryStore
 from recall import Recall, score_memory
@@ -56,6 +57,22 @@ def test_recall_excludes_live_conversation_from_episodes(database):
     bundle = Recall(database).recall("tell me about my cat", live)
     for episode in bundle["episodes"]:
         assert episode["conversation_id"] == past
+
+
+def test_live_conversation_cannot_crowd_out_past_memories(database):
+    """Regression: the live conversation must be excluded in SQL, before
+    the vector top-k. A live conversation longer than the candidate pool
+    used to push every cross-conversation memory out of the candidates."""
+    store = MemoryStore(database)
+    past = store.create_conversation("past")
+    live = store.create_conversation("live")
+    store.add_episode(past, "user", "I adopted a cat named Miso last year")
+    for i in range(config.VECTOR_CANDIDATES + 6):
+        store.add_episode(live, "user",
+                          "my cat again, message {0}".format(i))
+
+    bundle = Recall(database).recall("tell me about my cat", live)
+    assert any("Miso" in e["content"] for e in bundle["episodes"])
 
 
 def test_recall_includes_open_tasks(database):

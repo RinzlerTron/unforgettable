@@ -59,14 +59,15 @@ def beliefs_at(database, at):
         # Timestamp outside the GC window, before the table existed, or in
         # the future: fall back to the append-only reconstruction.
         log.info("AS OF SYSTEM TIME unavailable for %s (%s); "
-                 "using bitemporal columns", at.isoformat(), error)
+                 "reconstructing from append-only versions",
+                 at.isoformat(), error)
     rows = database.execute(
         "SELECT {0} FROM facts"
         " WHERE valid_from <= %s"
         " AND (superseded_at IS NULL OR superseded_at > %s)"
         " ORDER BY subject, valid_from".format(_FACT_COLUMNS),
         (at, at), fetch="all") or []
-    return {"at": at.isoformat(), "mechanism": "bitemporal",
+    return {"at": at.isoformat(), "mechanism": "version_reconstruction",
             "beliefs": _fact_dicts(rows)}
 
 

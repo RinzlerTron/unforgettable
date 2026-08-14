@@ -62,17 +62,21 @@ class Recall:
         return [{"role": r[0], "content": r[1], "created_at": r[2]}
                 for r in reversed(rows)]
 
-    def similar_episodes(self, query_vec, exclude_conversation_id, limit):
+    def similar_episodes(self, query_vec, exclude_conversation_id):
         """Vector search over past episodes, excluding the live conversation
-        (its tail is already provided verbatim by recent_turns)."""
+        (its tail is already provided verbatim by recent_turns). The
+        exclusion happens in SQL so a long live conversation cannot crowd
+        every cross-conversation memory out of the candidate top-k."""
         rows = self.db.execute(
             "SELECT id, conversation_id, role, content, created_at,"
             " embedding <=> %s::vector AS distance"
             " FROM episodes"
             " WHERE embedding_model = %s AND role IN ('user', 'assistant')"
+            " AND conversation_id != %s"
             " ORDER BY embedding <=> %s::vector"
             " LIMIT %s",
             (embeddings.vector_literal(query_vec), embeddings.model_name(),
+             exclude_conversation_id,
              embeddings.vector_literal(query_vec), config.VECTOR_CANDIDATES),
             fetch="all") or []
         return [
@@ -80,8 +84,7 @@ class Recall:
              "content": r[3], "created_at": r[4],
              "similarity": 1.0 - float(r[5])}
             for r in rows
-            if str(r[1]) != str(exclude_conversation_id)
-        ][: config.VECTOR_CANDIDATES]
+        ]
 
     def candidate_facts(self, query_vec, query_terms):
         """Union of vector-nearest facts and keyword-matched facts."""
@@ -121,8 +124,7 @@ class Recall:
         query_vec = embeddings.embed(query_text)
         query_terms = set(embeddings.tokenize(query_text))
 
-        episodes = self.similar_episodes(query_vec, conversation_id,
-                                         config.RECALL_EPISODES)
+        episodes = self.similar_episodes(query_vec, conversation_id)
         for item in episodes:
             item["score"] = score_memory(
                 item["similarity"], _age_hours(item["created_at"], now),

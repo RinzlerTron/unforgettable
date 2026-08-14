@@ -6,8 +6,9 @@ One turn does, in order:
   3. learn      - extract facts (with provenance to that episode) and tasks
   4. respond    - hand the prompt + memory context to the configured LLM
   5. remember   - store the reply as an episode
-  6. audit      - record which memory rows the reply used (recall_traces),
-                  so timetravel.explain_reply() can justify any past answer
+  6. audit      - record which memory rows the reply was given
+                  (recall_traces), so timetravel.explain_reply() can show
+                  the provenance of any past answer
 Because every step reads and writes CockroachDB rows, an agent process can
 be killed and restarted - or the database node under it can die - without
 losing a single memory. Nothing is cached in process memory.
@@ -18,6 +19,8 @@ Inputs: conversation id + user text. Outputs: reply + recall trace.
 
 import logging
 
+import psycopg.conninfo
+
 import config
 import extract
 import llm
@@ -26,6 +29,20 @@ from memory_store import MemoryStore
 from recall import Recall
 
 log = logging.getLogger("agent")
+
+
+def public_db_target(url):
+    """host:port of a DSN, everything else dropped: safe for status
+    endpoints. Parses both URL and keyword DSN forms and never
+    reconstructs the DSN, so credentials cannot leak from any position
+    (userinfo, query parameters, or keyword pairs)."""
+    try:
+        params = psycopg.conninfo.conninfo_to_dict(url)
+    except psycopg.ProgrammingError:
+        return "(unparseable dsn)"
+    host = params.get("host") or "localhost"
+    port = params.get("port") or "26257"
+    return "{0}:{1}".format(host, port)
 
 
 def format_memory_context(bundle):
@@ -104,8 +121,8 @@ class Agent:
             conversation_id, "assistant", reply,
             meta={"in_reply_to": episode_id})
 
-        # Decision audit: record exactly which memory rows this reply used,
-        # so timetravel.explain_reply() can answer "why did it say that?"
+        # Decision audit: record exactly which memory rows this reply was
+        # given, so timetravel.explain_reply() can show what informed it.
         recalled = {
             "facts": [{"id": f["id"], "content": f["content"],
                        "score": round(f["score"], 4)}
@@ -132,7 +149,7 @@ class Agent:
         counts = self.store.counts()
         return {
             "node_id": node_id,
-            "url": self.db.urls[url_index],
+            "url": public_db_target(self.db.urls[url_index]),
             "urls_configured": len(self.db.urls),
             "llm_backend": self.client.name,
             "embedding_backend": config.EMBED_BACKEND,

@@ -2,7 +2,7 @@
 
 import json
 
-from agent import Agent
+from agent import Agent, public_db_target
 from conftest import FIXTURES
 
 
@@ -68,3 +68,20 @@ def test_status_reports_node_and_counts(database):
     assert status["llm_backend"] == "scripted"
     assert set(status["counts"]) == {"episodes", "facts", "fact_versions",
                                      "open_tasks"}
+    # The status endpoint is public: it must never echo credentials.
+    assert "@" not in status["url"]
+
+
+def test_public_db_target_never_leaks_credentials():
+    """Credentials must not leak from any DSN position: URL userinfo,
+    URL query parameters, or keyword-pair DSNs."""
+    cases = (
+        "postgresql://alice:sekret@db.example.com:26257/mem",
+        "postgresql://db.example.com:26257/mem?user=alice&password=sekret",
+        "host=db.example.com port=26257 user=alice password=sekret",
+    )
+    for dsn in cases:
+        target = public_db_target(dsn)
+        assert "db.example.com" in target
+        assert "alice" not in target
+        assert "sekret" not in target

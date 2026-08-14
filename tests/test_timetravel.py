@@ -25,7 +25,8 @@ def test_beliefs_at_rewinds_a_flip(database):
 
     at_t0 = timetravel.beliefs_at(database, t0)
     assert at_t0["beliefs"] == []
-    assert at_t0["mechanism"] in ("as_of_system_time", "bitemporal")
+    assert at_t0["mechanism"] in ("as_of_system_time",
+                                  "version_reconstruction")
 
     at_t1 = timetravel.beliefs_at(database, t1)
     assert len(at_t1["beliefs"]) == 1
@@ -38,7 +39,7 @@ def test_beliefs_at_rewinds_a_flip(database):
 
 def test_beliefs_at_falls_back_beyond_gc_window(database):
     snapshot = timetravel.beliefs_at(database, "2000-01-01T00:00:00+00:00")
-    assert snapshot["mechanism"] == "bitemporal"
+    assert snapshot["mechanism"] == "version_reconstruction"
     assert snapshot["beliefs"] == []
 
 

@@ -9,7 +9,7 @@
 --                   forever - and recent moments can also be read natively
 --                   with AS OF SYSTEM TIME (see src/timetravel.py)
 --   tasks         - task state the agent has been asked to track
---   recall_traces - decision audit: which memory rows each reply used
+--   recall_traces - decision audit: which memory rows each reply was given
 --
 -- Embeddings use CockroachDB's native VECTOR type with distributed vector
 -- indexes (created by db.py after these tables exist).

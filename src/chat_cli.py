@@ -96,14 +96,14 @@ def print_why(agent, reply_episode_id):
     print("asked  : {0}".format(audit["user_message"]))
     print("reply  : {0}".format(audit["reply"]))
     for fact in audit["used_facts"]:
-        print("used   : {0}".format(fact["content"]))
+        print("recalled: {0}".format(fact["content"]))
         if fact["taught_by"]:
-            print("         learned from: '{0}' at {1}".format(
+            print("          learned from: '{0}' at {1}".format(
                 fact["taught_by"]["content"], fact["taught_by"]["at"]))
     for episode in audit["used_episodes"]:
-        print("used past moment: {0}".format(episode["content"]))
+        print("recalled past moment: {0}".format(episode["content"]))
     if not audit["used_facts"] and not audit["used_episodes"]:
-        print("(the reply used no long-term memory)")
+        print("(no long-term memory was recalled for the reply)")
 
 
 def main():

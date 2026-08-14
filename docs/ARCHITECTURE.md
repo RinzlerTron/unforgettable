@@ -56,7 +56,7 @@ taught it - so any belief traces back to the exact message it came from.
    - `AS OF SYSTEM TIME` - CockroachDB-native historical reads: a
      consistent snapshot at timestamp `t`, no locks, served by any node.
      Used whenever `t` is within the MVCC garbage-collection window.
-   - Bitemporal reconstruction - `valid_from <= t AND (superseded_at IS
+   - Version reconstruction - `valid_from <= t AND (superseded_at IS
      NULL OR superseded_at > t)` over the append-only version rows. Works
      for any moment since the agent was born, forever.
    The API reports which mechanism served the answer.

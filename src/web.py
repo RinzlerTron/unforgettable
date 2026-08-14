@@ -4,8 +4,8 @@ The right-hand panel shows, for every turn, which facts, episodes, and
 tasks were recalled from CockroachDB and which node served the request.
 The time-travel console rewinds the agent's beliefs to any timestamp
 (AS OF SYSTEM TIME when possible) and diffs beliefs between two moments.
-Clicking any agent reply shows its decision audit: which memory rows it
-used and which message originally taught each fact.
+Clicking any agent reply shows its decision audit: which memory rows were
+recalled into its context and which message originally taught each fact.
 
 Endpoints:
   GET  /                     chat page (inline HTML, no external assets)
@@ -20,6 +20,7 @@ Invoked by: ./run.sh web  (uvicorn web:app).
 """
 
 import logging
+import threading
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -34,12 +35,21 @@ log = logging.getLogger("web")
 
 app = FastAPI(title="Unforgettable")
 _agent = None
+# One turn at a time: the Database owns a single connection, and FastAPI
+# runs sync endpoints on a thread pool, so concurrent turns must not
+# interleave statements on it.
+_turn_lock = threading.Lock()
+
+
+_init_lock = threading.Lock()
 
 
 def get_agent():
     global _agent
     if _agent is None:
-        _agent = Agent()
+        with _init_lock:
+            if _agent is None:
+                _agent = Agent()
     return _agent
 
 
@@ -51,10 +61,11 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 def chat(request: ChatRequest):
     agent = get_agent()
-    conversation_id = request.conversation_id
-    if not conversation_id or not agent.store.conversation_exists(conversation_id):
-        conversation_id = agent.new_conversation(title="web session")
-    result = agent.turn(conversation_id, request.message)
+    with _turn_lock:
+        conversation_id = request.conversation_id
+        if not conversation_id or not agent.store.conversation_exists(conversation_id):
+            conversation_id = agent.new_conversation(title="web session")
+        result = agent.turn(conversation_id, request.message)
     result["conversation_id"] = conversation_id
     try:
         node_id, _ = agent.db.node_info()
@@ -174,7 +185,8 @@ PAGE = """<!DOCTYPE html>
   <div class="note">t1 and t2 are two moments; the diff shows which beliefs
   changed between them. Message times are on each chat bubble, and each
   belief above shows when it started being true - use those to aim t1/t2.</div>
-  <div class="note">Tip: click any agent reply to see the memories it used.</div>
+  <div class="note">Tip: click any agent reply to see the memories recalled
+  for it.</div>
   <h2 id="paneltitle">Recalled this turn</h2>
   <div id="panel" class="note">Nothing yet.</div>
 </div>
@@ -353,16 +365,18 @@ async function explain(episodeId) {
       source = '<br><span class="score">learned from: "' +
         esc(f.taught_by.content) + '"</span>';
     }
-    parts.push('<div class="item">used: ' + esc(f.content) + source + '</div>');
+    parts.push('<div class="item">recalled: ' + esc(f.content) + source +
+      '</div>');
   }
   for (const e of data.used_episodes) {
-    parts.push('<div class="item">used past moment: ' + esc(e.content) +
+    parts.push('<div class="item">recalled past moment: ' + esc(e.content) +
       '</div>');
   }
   if (parts.length === 1) {
-    parts.push('<div class="note">The reply used no long-term memory.</div>');
+    parts.push('<div class="note">No long-term memory was recalled for ' +
+      'this reply.</div>');
   }
-  setPanel("Why it said that", parts.join(""));
+  setPanel("What informed this reply", parts.join(""));
 }
 
 async function refreshTotals() {

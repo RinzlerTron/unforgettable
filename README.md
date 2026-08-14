@@ -47,10 +47,10 @@ Then interactively (`./run.sh web`, after starting a node per
 2. Change your mind ("Actually I moved to Chennai"), then use the
    time-travel panel: beliefs at a minute ago vs now, and the diff showing
    the location belief flip.
-3. Click any agent reply to see its decision audit: which memory rows it
-   used and which message taught each fact.
+3. Click any agent reply to see its decision audit: which memory rows
+   were recalled into its context and which message taught each fact.
 
-Manual fallback: `./run.sh test` (45 tests, self-starts a disposable
+Manual fallback: `./run.sh test` (48 tests, self-starts a disposable
 CockroachDB node). Default mode is `MEM_LLM=off` - a deterministic
 scripted client that exercises the full memory pipeline; set
 `MEM_LLM=bedrock` for Claude on AWS Bedrock (see docs/DEPLOYMENT.md).
@@ -71,9 +71,9 @@ Detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Metric | Value |
 |---|---|
 | Node killed mid-conversation | 0 memories lost; failover on the next statement (chaos demo asserts it) |
-| Time travel | Belief state at any past moment; AS OF SYSTEM TIME inside the GC window, bitemporal columns forever |
-| Decision audit | 100% of replies traceable to the exact memory rows used and the messages that taught them |
-| Test suite | 45 tests against a real CockroachDB node |
+| Time travel | Belief state at any past moment; AS OF SYSTEM TIME inside the GC window, append-only version reconstruction beyond it |
+| Decision audit | Every reply traceable to the memory rows recalled for it and the messages that taught them |
+| Test suite | 48 tests against a real CockroachDB node |
 | Keys needed for the full demo | none (scripted mode + local embeddings) |
 
 The console in action (all four are live captures of `./run.sh web`):
@@ -85,8 +85,8 @@ The console in action (all four are live captures of `./run.sh web`):
 flipped, with before/after confidence.*
 ![Belief diff after a flip](docs/img/2-belief-diff.png)
 
-*Click any reply: which memory rows it used, and which message taught
-each fact.*
+*Click any reply: which memory rows were recalled for it, and which
+message taught each fact.*
 ![Per-reply decision audit](docs/img/3-decision-audit.png)
 
 *Rewind to before the move: the agent's Singapore-era belief state,
@@ -105,7 +105,7 @@ served by AS OF SYSTEM TIME.*
 | Agentic Memory Design | Episodic + semantic + task memory with confidence and provenance; consolidation job distills episodes into beliefs; append-only versioning makes belief history first-class |
 | Technical Implementation | Native AS OF SYSTEM TIME, vector indexes, JSONB provenance, SQLSTATE 40001 retries, multi-node client failover, transactional versioning |
 | Real-World Impact | Memory audit and debugging: "what did the agent believe when it did that, and why" - the missing tool for agents in production |
-| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only, 45 tests |
+| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only (and never echoed by the status API), 48 tests |
 | Creativity & Originality | Time-travel memory: rewind, belief diff, and per-reply decision audit built directly on CockroachDB primitives |
 
 ## Limitations
@@ -123,6 +123,15 @@ Deliberate scope decisions, not gaps we missed:
 - In zero-key scripted mode, fact extraction uses deliberately conservative
   rule-based patterns; full natural-language extraction needs the Bedrock
   or Anthropic mode, where Claude does the extraction instead of regex.
+- The demo intentionally supports one trusted operator and one memory
+  profile. It is not safe for untrusted multi-user deployment: production
+  use needs authentication plus tenant-scoped storage, retrieval, history,
+  and audit APIs, and tests proving cross-tenant denial.
+- The decision audit records what was recalled into the model's context
+  for a reply - its complete provenance - not a claim about the model's
+  internal reasoning. In LLM modes the model can ignore context; the
+  trace still shows exactly what it was shown, which is the auditable
+  part.
 
 ## Project structure
 
@@ -141,7 +150,7 @@ Deliberate scope decisions, not gaps we missed:
     ├── chat_cli.py      # terminal chat
     └── web.py           # web chat + time-travel console
     tools/               # chaos_demo.py, ccloud_deploy.sh, MCP config
-    tests/               # 45 tests + fixtures (real saved inputs)
+    tests/               # 48 tests + fixtures (real saved inputs)
     docs/                # ARCHITECTURE.md, DEPLOYMENT.md
 
 ## Author
