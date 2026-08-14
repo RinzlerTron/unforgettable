@@ -158,6 +158,22 @@ def run_demo(keep_cluster, store_dir=None):
 
         pre_kill_time = agent.db.execute("SELECT now()", fetch="one")[0]
 
+        # Exact memory inventory before the kill: every fact version row
+        # (id + subject + content), every task, and the episode count.
+        # "0 memories lost" is asserted row-by-row, not by word-matching.
+        def memory_inventory():
+            fact_rows = agent.db.execute(
+                "SELECT id, subject, content FROM facts", fetch="all") or []
+            task_rows = agent.db.execute(
+                "SELECT id, title FROM tasks", fetch="all") or []
+            episode_count = agent.db.execute(
+                "SELECT count(*) FROM episodes", fetch="one")[0]
+            return ({(str(r[0]), r[1], r[2]) for r in fact_rows},
+                    {(str(r[0]), r[1]) for r in task_rows},
+                    episode_count)
+
+        facts_before, tasks_before, episodes_before = memory_inventory()
+
         victim = processes[0]
         print("== CHAOS: sending SIGKILL to node 1 (pid {0}), the node the "
               "agent was using".format(victim.pid))
@@ -187,6 +203,22 @@ def run_demo(keep_cluster, store_dir=None):
                   len(snapshot["beliefs"]), snapshot["mechanism"]))
         checks.append(("time travel across node failure", "beliefs",
                        len(snapshot["beliefs"]) >= 3))
+
+        # Row-exact survival: every pre-kill fact version and task must
+        # still exist with identical id and content on the survivors
+        # (rows are append-only, so even superseded versions must remain).
+        facts_after, tasks_after, episodes_after = memory_inventory()
+        checks.append(("every pre-kill fact row survived byte-identical",
+                       "id+subject+content superset",
+                       facts_before <= facts_after))
+        checks.append(("every pre-kill task row survived byte-identical",
+                       "id+title superset", tasks_before <= tasks_after))
+        checks.append(("no episode rows lost", "count never shrinks",
+                       episodes_after >= episodes_before))
+        print("== Row-exact check: {0}/{1} pre-kill fact versions and "
+              "{2}/{3} tasks present after failover".format(
+                  len(facts_before & facts_after), len(facts_before),
+                  len(tasks_before & tasks_after), len(tasks_before)))
 
         node_after, _ = agent.db.node_info()
         counts = agent.store.counts()
