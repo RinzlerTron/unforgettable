@@ -55,14 +55,19 @@ one command - the recipe is two short readable files
 Then interactively (`./run.sh web`, after starting a node per
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) try:
 
-1. Tell it things: "My name is Priya, I live in Singapore, my cat is
-   called Miso. Remind me to renew my passport." Then ask "what do you
-   remember about me?"
-2. Change your mind ("Actually I moved to Chennai"), then use the
-   time-travel panel: beliefs at a minute ago vs now, and the diff showing
-   the location belief flip.
+Play the compliance scenario from the pitch above, as the client:
+
+1. Onboard: "My name is Priya Nair and I live in Singapore." Then
+   "My risk tolerance is conservative. Remind me to review the fund
+   disclosure documents." Ask "what do you remember about me?" - every
+   stored belief shows when it started being true.
+2. The belief flip an auditor cares about: "Actually, my risk tolerance
+   is aggressive now." Open the time-travel panel: beliefs a minute ago
+   vs now, and the diff showing conservative -> aggressive - with
+   before/after confidence and the exact message that taught it.
 3. Click any agent reply to see its decision audit: which memory rows
-   were recalled into its context and which message taught each fact.
+   were recalled into its context and which message taught each fact -
+   the "what did it believe when it answered" record, from SQL.
 
 Manual fallback: `./run.sh test` (49 tests, self-starts a disposable
 CockroachDB node). Default mode is `MEM_LLM=off` - a deterministic

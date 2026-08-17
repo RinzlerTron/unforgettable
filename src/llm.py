@@ -197,8 +197,9 @@ class ScriptedClient:
         # belief was formed.
         return ("Stored as an episode, but I did not extract a durable "
                 "belief from that. In this zero-key scripted mode I only "
-                "recognize simple statements like 'my cat is called Miso' "
-                "or 'I live in Singapore'; in Bedrock/Anthropic mode "
+                "recognize simple statements like 'my risk tolerance is "
+                "conservative' or 'I live in Singapore'; in Bedrock/"
+                "Anthropic mode "
                 "Claude does the extraction and understands free phrasing.")
 
     def extract_facts(self, text):

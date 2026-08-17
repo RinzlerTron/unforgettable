@@ -28,9 +28,10 @@ _FACT_PATTERNS = [
      "user.work", "The user works at {0}."),
     (re.compile(r"\bi(?:'m| am) an? ([A-Za-z][A-Za-z -]{0,50}?(?:er|or|ist|ian|eer))\b", re.I),
      "user.work", "The user is a {0}."),
-    (re.compile(r"\bmy (\w{2,30}) is (?:called |named )?([A-Za-z0-9][A-Za-z0-9 .'-]{0,60})", re.I),
-     "user.attribute", None),  # handled specially below
-    (re.compile(r"\bmy (\w{2,30})'s name is ([A-Za-z0-9][A-Za-z0-9 .'-]{0,60})", re.I),
+    (re.compile(r"\bmy (\w{2,30}(?: \w{2,30}){0,2}) is (?:called |named )?([A-Za-z0-9$][A-Za-z0-9 .'%-]{0,60})", re.I),
+     "user.attribute", None),  # handled specially below; attribute may be
+                               # up to three words ("risk tolerance")
+    (re.compile(r"\bmy (\w{2,30}(?: \w{2,30}){0,2})'s name is ([A-Za-z0-9][A-Za-z0-9 .'-]{0,60})", re.I),
      "user.attribute", None),  # "my cat's name is Miso"
     (re.compile(r"\bi (?:really )?(love|like|prefer|enjoy) ([a-z0-9][a-z0-9 .,'-]{1,80})", re.I),
      "user.preference", "The user {0}s {1}." ),
@@ -87,10 +88,12 @@ def extract_facts(text):
             groups = [_clean(g) for g in match.groups()]
             if subject == "user.attribute":
                 attribute, value = groups[0].lower(), groups[1]
-                if attribute in _ATTRIBUTE_STOPLIST or not value:
+                if not value or not attribute \
+                        or any(w in _ATTRIBUTE_STOPLIST
+                               for w in attribute.split()):
                     continue
                 content = "The user's {0} is {1}.".format(attribute, value)
-                subject_key = "user." + attribute
+                subject_key = "user." + attribute.replace(" ", "_")
             else:
                 if not all(groups):
                     continue
