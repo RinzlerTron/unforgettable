@@ -5,9 +5,12 @@ For each turn the agent asks for a MemoryBundle:
   - similar past episodes found by vector search over the whole history,
   - relevant facts found by vector search plus keyword match,
   - open tasks.
-Vector search runs in CockroachDB (ORDER BY embedding <=> query, served by
-the distributed vector index); candidates are then re-ranked in Python with
-a transparent score combining similarity, recency, and keyword overlap.
+Vector search runs in CockroachDB (ORDER BY embedding <-> query, served by
+the distributed vector index - both embedding backends are unit-normalized,
+so L2 order equals cosine order and the query stays on the index; a test
+asserts the EXPLAIN plan says "vector search", not FULL SCAN). Candidates
+are then re-ranked in Python with a transparent score combining similarity,
+recency, and keyword overlap.
 
 Invoked by: agent.py (every turn), web.py (memory inspector).
 Inputs: query text + Database. Outputs: MemoryBundle dict.
@@ -47,6 +50,12 @@ def _age_hours(created_at, now):
     return max((now - created_at).total_seconds() / 3600.0, 0.0)
 
 
+def _l2_to_similarity(distance):
+    """Cosine similarity recovered from L2 distance of unit vectors:
+    ||a-b||^2 = 2 - 2*cos(a,b), so cos = 1 - d^2/2."""
+    return 1.0 - (distance * distance) / 2.0
+
+
 class Recall:
 
     def __init__(self, database):
@@ -64,37 +73,43 @@ class Recall:
 
     def similar_episodes(self, query_vec, exclude_conversation_id):
         """Vector search over past episodes, excluding the live conversation
-        (its tail is already provided verbatim by recent_turns). The
-        exclusion happens in SQL so a long live conversation cannot crowd
-        every cross-conversation memory out of the candidate top-k."""
+        (its tail is already provided verbatim by recent_turns).
+
+        The SQL filters match episodes_ann_idx exactly (prefix column +
+        partial predicate), so the query is served by the vector index; a
+        conversation_id != filter in SQL would demote it to a full scan
+        (verified with EXPLAIN). The exclusion therefore happens in Python
+        over an oversampled pool, sized so even a live conversation longer
+        than the whole candidate top-k cannot crowd out every
+        cross-conversation memory."""
         rows = self.db.execute(
             "SELECT id, conversation_id, role, content, created_at,"
-            " embedding <=> %s::vector AS distance"
+            " embedding <-> %s::vector AS distance"
             " FROM episodes"
             " WHERE embedding_model = %s AND role IN ('user', 'assistant')"
-            " AND conversation_id != %s"
-            " ORDER BY embedding <=> %s::vector"
+            " ORDER BY embedding <-> %s::vector"
             " LIMIT %s",
             (embeddings.vector_literal(query_vec), embeddings.model_name(),
-             exclude_conversation_id,
-             embeddings.vector_literal(query_vec), config.VECTOR_CANDIDATES),
+             embeddings.vector_literal(query_vec),
+             config.VECTOR_CANDIDATES * config.EPISODE_POOL_FACTOR),
             fetch="all") or []
         return [
             {"id": str(r[0]), "conversation_id": str(r[1]), "role": r[2],
              "content": r[3], "created_at": r[4],
-             "similarity": 1.0 - float(r[5])}
+             "similarity": _l2_to_similarity(float(r[5]))}
             for r in rows
-        ]
+            if str(r[1]) != str(exclude_conversation_id)
+        ][: config.VECTOR_CANDIDATES]
 
     def candidate_facts(self, query_vec, query_terms):
         """Union of vector-nearest facts and keyword-matched facts."""
         by_id = {}
         rows = self.db.execute(
             "SELECT id, subject, content, confidence, valid_from,"
-            " embedding <=> %s::vector AS distance"
+            " embedding <-> %s::vector AS distance"
             " FROM facts"
             " WHERE superseded_at IS NULL AND embedding_model = %s"
-            " ORDER BY embedding <=> %s::vector"
+            " ORDER BY embedding <-> %s::vector"
             " LIMIT %s",
             (embeddings.vector_literal(query_vec), embeddings.model_name(),
              embeddings.vector_literal(query_vec), config.VECTOR_CANDIDATES),
@@ -103,7 +118,7 @@ class Recall:
             by_id[str(r[0])] = {
                 "id": str(r[0]), "subject": r[1], "content": r[2],
                 "confidence": float(r[3]), "created_at": r[4],
-                "similarity": 1.0 - float(r[5])}
+                "similarity": _l2_to_similarity(float(r[5]))}
         for term in list(query_terms)[:8]:
             rows = self.db.execute(
                 "SELECT id, subject, content, confidence, valid_from"

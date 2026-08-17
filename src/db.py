@@ -160,12 +160,25 @@ class Database:
             self.execute("SET CLUSTER SETTING feature.vector_index.enabled = true")
         except psycopg.Error as error:
             log.info("could not set vector index cluster setting: %s", error)
-        for name, table in (("episodes_embedding_idx", "episodes"),
-                            ("facts_embedding_idx", "facts")):
+        # Partial prefix indexes shaped so the planner actually serves the
+        # recall queries from them (verified with EXPLAIN: "vector search",
+        # not FULL SCAN). The prefix column carries the embedding_model
+        # equality filter; the partial predicate carries the static filter.
+        # Queries use L2 (<->): embeddings are unit-normalized on both
+        # backends, so L2 ranks identically to cosine and is served by the
+        # index (v25.2 has no cosine operator class).
+        for name, ddl in (
+            ("episodes_ann_idx",
+             "CREATE VECTOR INDEX IF NOT EXISTS episodes_ann_idx"
+             " ON episodes (embedding_model, embedding)"
+             " WHERE role IN ('user', 'assistant')"),
+            ("facts_ann_idx",
+             "CREATE VECTOR INDEX IF NOT EXISTS facts_ann_idx"
+             " ON facts (embedding_model, embedding)"
+             " WHERE superseded_at IS NULL"),
+        ):
             try:
-                self.execute(
-                    "CREATE VECTOR INDEX IF NOT EXISTS {name} ON {table} (embedding)"
-                    .format(name=name, table=table))
+                self.execute(ddl)
             except psycopg.Error as error:
                 log.warning("vector index %s not created (%s); "
                             "similarity search will scan", name, error)

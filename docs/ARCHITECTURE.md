@@ -101,7 +101,7 @@ sequenceDiagram
 
     user text
       -> recall.py     hybrid retrieval: vector search (ORDER BY
-                       embedding <=> query, served by the vector index)
+                       embedding <-> query, served by partial prefix vector indexes; embeddings are unit-normalized so L2 order equals cosine order, and a test asserts the EXPLAIN plan says vector search, not FULL SCAN)
                        + keyword match + recent conversation tail,
                        re-ranked by 0.6*similarity + 0.2*recency
                        + 0.2*keyword_overlap, facts scaled by confidence

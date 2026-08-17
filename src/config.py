@@ -69,6 +69,13 @@ RECALL_EPISODES = 4      # similar past episodes injected per turn
 RECALL_FACTS = 6         # relevant facts injected per turn
 RECENT_TURNS = 8         # verbatim tail of the current conversation
 VECTOR_CANDIDATES = 24   # rows fetched by vector search before re-ranking
+EPISODE_POOL_FACTOR = 2  # episode pool oversampling: the live conversation
+                         # is excluded in Python (a SQL != filter would
+                         # demote the query off the vector index), so the
+                         # pool is oversized to keep cross-conversation
+                         # memories reachable past a long live conversation.
+                         # Capped: EXPLAIN shows the v25.2 planner drops to
+                         # a full scan when the vector top-k exceeds ~64.
 
 # --- Consolidation --------------------------------------------------------
 CONSOLIDATE_MIN_AGE_MINUTES = int(_env("MEM_CONSOLIDATE_MIN_AGE_MINUTES", "30"))

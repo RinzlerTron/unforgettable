@@ -64,7 +64,7 @@ Then interactively (`./run.sh web`, after starting a node per
 3. Click any agent reply to see its decision audit: which memory rows
    were recalled into its context and which message taught each fact.
 
-Manual fallback: `./run.sh test` (48 tests, self-starts a disposable
+Manual fallback: `./run.sh test` (49 tests, self-starts a disposable
 CockroachDB node). Default mode is `MEM_LLM=off` - a deterministic
 scripted client that exercises the full memory pipeline; set
 `MEM_LLM=bedrock` for Claude on AWS Bedrock (see docs/DEPLOYMENT.md).
@@ -94,7 +94,7 @@ flowchart LR
     BED["AWS Bedrock<br/>Claude Converse API<br/>Titan Text Embeddings V2"]
 
     UI --> AGENT
-    RC -->|"ORDER BY embedding <=> query<br/>(distributed vector index)"| EP
+    RC -->|"ORDER BY embedding <-> query<br/>(distributed vector index)"| EP
     RC --> FA
     MS --> EP
     MS --> FA
@@ -117,7 +117,7 @@ turn-by-turn sequence diagram in
 | Node killed mid-conversation | 0 memories lost; failover on the next statement (chaos demo asserts it) |
 | Time travel | Belief state at any past moment; AS OF SYSTEM TIME inside the GC window, append-only version reconstruction beyond it |
 | Decision audit | Every reply traceable to the memory rows recalled for it and the messages that taught them |
-| Test suite | 48 tests against a real CockroachDB node |
+| Test suite | 49 tests against a real CockroachDB node |
 | Keys needed for the full demo | none (scripted mode + local embeddings) |
 
 The console in action (all four are live captures of `./run.sh web`):
@@ -142,14 +142,14 @@ served by AS OF SYSTEM TIME.*
 | Requirement / criterion | Where this submission delivers it |
 |---|---|
 | CockroachDB as persistent memory layer | All memory is SQL rows: `episodes`, `facts`, `tasks`, `recall_traces` (src/schema.sql); the agent process is stateless |
-| CockroachDB tool 1: Distributed Vector Indexing | `VECTOR(256)` columns + `CREATE VECTOR INDEX` on episodes and facts; every recall runs `ORDER BY embedding <=> query` in-database (src/db.py, src/recall.py) |
+| CockroachDB tool 1: Distributed Vector Indexing | `VECTOR(256)` columns + partial prefix vector indexes on episodes and facts, shaped so the planner actually serves every recall from them; a test asserts the EXPLAIN plan says `vector search`, never `FULL SCAN` (src/db.py, src/recall.py, tests/test_recall_ranking.py) |
 | CockroachDB tool 2: ccloud CLI | `tools/ccloud_deploy.sh` provisions the cluster, SQL user, and connection URL end to end |
 | CockroachDB tool 3: Managed MCP Server | `tools/mcp_config.example.json` connects Claude Code/Cursor to the memory cluster read-only, so judges can inspect the agent's beliefs live |
 | AWS service: Amazon Bedrock | Claude via the Converse API + Titan Text Embeddings V2 (src/llm.py, src/embeddings.py); agent hosts on EC2/ECS (docs/DEPLOYMENT.md) |
 | Agentic Memory Design | Episodic + semantic + task memory with confidence and provenance; consolidation job distills episodes into beliefs; append-only versioning makes belief history first-class |
 | Technical Implementation | Native AS OF SYSTEM TIME, vector indexes, JSONB provenance, SQLSTATE 40001 retries, multi-node client failover, transactional versioning |
 | Real-World Impact | Memory audit and debugging: "what did the agent believe when it did that, and why" - the missing tool for agents in production |
-| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only (and never echoed by the status API), 48 tests |
+| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only (and never echoed by the status API), 49 tests |
 | Creativity & Originality | Time-travel memory: rewind, belief diff, and per-reply decision audit built directly on CockroachDB primitives |
 
 ## Limitations
@@ -194,7 +194,7 @@ Deliberate scope decisions, not gaps we missed:
     ├── chat_cli.py      # terminal chat
     └── web.py           # web chat + time-travel console
     tools/               # chaos_demo.py, ccloud_deploy.sh, MCP config
-    tests/               # 48 tests + fixtures (real saved inputs)
+    tests/               # 49 tests + fixtures (real saved inputs)
     docs/                # ARCHITECTURE.md, DEPLOYMENT.md
 
 ## Author
