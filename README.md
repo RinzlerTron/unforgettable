@@ -57,7 +57,7 @@ Then interactively (`./run.sh web`, after starting a node per
 
 Play the compliance scenario from the pitch above, as the client:
 
-1. Onboard: "My name is Priya Nair and I live in Singapore." Then
+1. Onboard: "My name is Alice and I live in Singapore." Then
    "My risk tolerance is conservative. Remind me to review the fund
    disclosure documents." Ask "what do you remember about me?" - every
    stored belief shows when it started being true.

@@ -15,7 +15,7 @@ def test_beliefs_at_rewinds_a_flip(database):
     store = MemoryStore(database)
     t0 = _db_now(database)
     time.sleep(0.05)
-    store.add_fact("user.name", "The user's name is Priya.", 0.9, {"m": 1})
+    store.add_fact("user.name", "The user's name is Alice.", 0.9, {"m": 1})
     time.sleep(0.05)
     t1 = _db_now(database)
     time.sleep(0.05)
@@ -30,7 +30,7 @@ def test_beliefs_at_rewinds_a_flip(database):
 
     at_t1 = timetravel.beliefs_at(database, t1)
     assert len(at_t1["beliefs"]) == 1
-    assert "Priya" in at_t1["beliefs"][0]["content"]
+    assert "Alice" in at_t1["beliefs"][0]["content"]
 
     at_t2 = timetravel.beliefs_at(database, t2)
     assert len(at_t2["beliefs"]) == 1
@@ -47,7 +47,7 @@ def test_belief_diff_classifies_changes(database):
     store = MemoryStore(database)
     t0 = _db_now(database)
     time.sleep(0.05)
-    store.add_fact("user.name", "The user's name is Priya.", 0.9, {"m": 1})
+    store.add_fact("user.name", "The user's name is Alice.", 0.9, {"m": 1})
     store.add_fact("user.preference", "The user likes laksa.", 0.8, {"m": 1})
     time.sleep(0.05)
     t1 = _db_now(database)
@@ -69,7 +69,7 @@ def test_belief_diff_classifies_changes(database):
     assert len(second_window["revised"]) == 1
     flip = second_window["revised"][0]
     assert flip["change"] == "changed_belief"
-    assert "Priya" in flip["before"]["content"]
+    assert "Alice" in flip["before"]["content"]
     assert "Anya" in flip["after"]["content"]
     assert second_window["retired"] == []
 

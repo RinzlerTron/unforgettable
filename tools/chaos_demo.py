@@ -147,8 +147,8 @@ def run_demo(keep_cluster, store_dir=None):
               .format(node_before))
 
         script_before = [
-            "Hi there. My name is Priya Nair and I live in Singapore.",
-            "I work at Meridian Health. My risk tolerance is conservative.",
+            "Hi there. My name is Alice and I live in Singapore.",
+            "I work at Acme Capital. My risk tolerance is conservative.",
             "Remind me to review the fund disclosure documents.",
         ]
         for line in script_before:
@@ -183,7 +183,7 @@ def run_demo(keep_cluster, store_dir=None):
 
         checks = []
         script_after = [
-            ("What is my name?", "priya"),
+            ("What is my name?", "alice"),
             ("What do you remember about me?", "conservative"),
             ("Also remind me to schedule the compliance review.",
              "compliance review"),

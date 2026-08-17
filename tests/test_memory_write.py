@@ -33,13 +33,13 @@ def test_episode_roundtrip_with_embedding(database):
 def test_fact_confidence_bounds(database):
     store = MemoryStore(database)
     with pytest.raises(ValueError):
-        store.add_fact("user.name", "The user's name is Priya.", 1.5, {})
+        store.add_fact("user.name", "The user's name is Alice.", 1.5, {})
 
 
 def test_fact_requires_subject_and_content(database):
     store = MemoryStore(database)
     with pytest.raises(ValueError):
-        store.add_fact("", "The user's name is Priya.", 0.9, {})
+        store.add_fact("", "The user's name is Alice.", 0.9, {})
     with pytest.raises(ValueError):
         store.add_fact("user.name", "", 0.9, {})
 
@@ -47,12 +47,12 @@ def test_fact_requires_subject_and_content(database):
 def test_duplicate_fact_merges_into_new_version(database):
     store = MemoryStore(database)
     first_id, merged_first = store.add_fact(
-        "user.name", "The user's name is Priya.", 0.8,
+        "user.name", "The user's name is Alice.", 0.8,
         {"method": "turn-extraction", "episode_id": "ep1"})
     assert merged_first is False
 
     second_id, merged_second = store.add_fact(
-        "user.name", "The user's name is Priya.", 0.95,
+        "user.name", "The user's name is Alice.", 0.95,
         {"method": "consolidation", "episode_id": "ep2"})
     assert merged_second is True
     assert second_id != first_id  # append-only: a new version row

@@ -7,7 +7,7 @@ from conftest import FIXTURES
 
 
 def _fixture():
-    return json.loads((FIXTURES / "conversation_priya.json").read_text())
+    return json.loads((FIXTURES / "conversation_demo.json").read_text())
 
 
 def test_memory_survives_new_agent_instance(database):
@@ -31,7 +31,7 @@ def test_turn_stores_episodes_facts_and_tasks(database):
     agent = Agent(database=database)
     conversation_id = agent.new_conversation("test")
     result = agent.turn(conversation_id,
-                        "My name is Priya. Remind me to renew my passport.")
+                        "My name is Alice. Remind me to renew my passport.")
 
     assert result["stored"]["facts"], "expected a fact to be stored"
     assert result["stored"]["tasks"], "expected a task to be stored"

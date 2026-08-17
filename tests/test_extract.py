@@ -29,11 +29,11 @@ def test_no_facts_from_smalltalk():
 
 
 def test_fact_shape_and_confidence():
-    facts = extract.extract_facts("My name is Priya")
+    facts = extract.extract_facts("My name is Alice")
     assert facts, "name should be extracted"
     fact = facts[0]
     assert fact["subject"] == "user.name"
-    assert "Priya" in fact["content"]
+    assert "Alice" in fact["content"]
     assert 0.0 <= fact["confidence"] <= 1.0
 
 
@@ -42,7 +42,7 @@ def test_attribute_stoplist_blocks_noise():
 
 
 def test_duplicate_facts_deduped_within_message():
-    facts = extract.extract_facts("My name is Priya. My name is Priya.")
+    facts = extract.extract_facts("My name is Alice. My name is Alice.")
     names = [f for f in facts if f["subject"] == "user.name"]
     assert len(names) == 1
 

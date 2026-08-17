@@ -382,6 +382,9 @@ async function explain(episodeId) {
 async function refreshTotals() {
   const response = await fetch("/api/status");
   const s = await response.json();
+  if (s.node_id !== null && s.node_id !== undefined) {
+    document.getElementById("node").textContent = "node " + s.node_id;
+  }
   document.getElementById("totals").textContent =
     " - " + s.counts.episodes + " episodes, " + s.counts.facts +
     " beliefs (" + s.counts.fact_versions + " versions), " +

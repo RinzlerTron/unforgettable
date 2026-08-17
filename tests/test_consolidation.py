@@ -15,7 +15,7 @@ def test_consolidation_writes_facts_with_provenance(database):
     conversation_id = store.create_conversation("old chat")
     episode_ids = [
         store.add_episode(conversation_id, "user",
-                          "My name is Priya and I live in Singapore."),
+                          "My name is Alice and I live in Singapore."),
         store.add_episode(conversation_id, "assistant", "Nice to meet you."),
         store.add_episode(conversation_id, "user",
                           "My cat is called Miso."),
@@ -54,7 +54,7 @@ def test_consolidation_marks_episodes_done(database):
 def test_consolidation_is_idempotent(database):
     store = MemoryStore(database)
     conversation_id = store.create_conversation("old chat")
-    store.add_episode(conversation_id, "user", "My name is Priya.")
+    store.add_episode(conversation_id, "user", "My name is Alice.")
     _backdate_episodes(database)
 
     consolidate.consolidate(database, min_age_minutes=30)
@@ -65,7 +65,7 @@ def test_consolidation_is_idempotent(database):
 def test_fresh_episodes_left_alone(database):
     store = MemoryStore(database)
     conversation_id = store.create_conversation("live chat")
-    store.add_episode(conversation_id, "user", "My name is Priya.")
+    store.add_episode(conversation_id, "user", "My name is Alice.")
 
     written = consolidate.consolidate(database, min_age_minutes=30)
     assert written == 0

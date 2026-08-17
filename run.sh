@@ -51,8 +51,8 @@ for table in ("recall_traces", "tasks", "facts", "episodes", "conversations"):
 agent = Agent(database=d)
 conversation_id = agent.new_conversation("demo")
 for line in (
-    "Hi there. My name is Priya Nair and I live in Singapore.",
-    "I work at Meridian Health. My risk tolerance is conservative.",
+    "Hi there. My name is Alice and I live in Singapore.",
+    "I work at Acme Capital. My risk tolerance is conservative.",
     "Remind me to review the fund disclosure documents.",
 ):
     agent.turn(conversation_id, line)

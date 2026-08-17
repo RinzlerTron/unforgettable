@@ -53,7 +53,7 @@ _ATTRIBUTE_STOPLIST = {
     "favorite", "name",
 }
 
-# A captured value ends where a new clause begins ("Priya and I live in...").
+# A captured value ends where a new clause begins ("Alice and I live in...").
 _CLAUSE_STOP_WORDS = {"and", "but", "or", "so", "because", "while", "since",
                       "i", "im", "also", "which", "who", "though"}
 # Fact values additionally shed trailing time phrases ("moved to Chennai

@@ -1,6 +1,6 @@
 [
   {
-    "text": "Hi there. My name is Priya and I live in Singapore.",
+    "text": "Hi there. My name is Alice and I live in Singapore.",
     "expected_fact_subjects": ["user.name", "user.location"],
     "expected_tasks": []
   },
