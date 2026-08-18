@@ -15,12 +15,11 @@ means grepping prompt logs with no ground truth. With Unforgettable it's
 `beliefs_at(Monday 10:02)` vs `beliefs_at(Thursday 15:41)`, a `belief_diff`
 showing exactly which belief flipped and which message taught it, and
 `explain_reply` tracing each answer to the memory rows behind it - under a
-minute, from SQL. Systems like MemGPT/Letta, Zep, and mem0 can tell you
-what an agent remembers now; none expose a queryable, diffable belief
-history that answers what it believed then, what changed, and why -
-that history layer is what CockroachDB's `AS OF SYSTEM TIME` and
-multi-node resilience make possible, with the diff and audit layer built
-on top as this project's contribution. Unforgettable keeps an agent's
+minute, from SQL. Memory systems like MemGPT/Letta, Zep, and mem0 focus
+on what an agent remembers now; Unforgettable's contribution is the
+queryable, diffable belief history - what it believed then, what changed,
+and why - built on CockroachDB's `AS OF SYSTEM TIME` and multi-node
+resilience. Unforgettable keeps an agent's
 entire memory - episodes, versioned beliefs, tasks, and a per-reply
 decision audit - as SQL rows in CockroachDB, so you can time-travel to
 any past belief state (`AS OF SYSTEM TIME` + append-only versions), diff
@@ -28,7 +27,7 @@ exactly which belief flipped between two answers, trace any reply to the
 message that taught it, and kill a database node mid-conversation without
 losing a thing.
 
-## Try It (For Judges)
+## Try it
 
 Running locally in about 3 minutes, zero accounts or keys. Each step says
 what it does; nothing installs system-wide or runs unseen:
@@ -157,30 +156,21 @@ served by AS OF SYSTEM TIME.*
 | Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only (and never echoed by the status API), 49 tests |
 | Creativity & Originality | Time-travel memory: rewind, belief diff, and per-reply decision audit built directly on CockroachDB primitives |
 
-## Limitations
+## Scope and future work
 
-Deliberate scope decisions, not gaps we missed:
+The current release supports one trusted operator with one memory
+profile; the decision audit records what was recalled into the model's
+context for each reply - its complete provenance - rather than the
+model's internal reasoning. Natural directions from here:
 
-- Multi-valued subjects are a fixed allowlist (`user.preference`,
-  `user.health`, `conversation.summary`); a second "my brother is X" fact
-  supersedes rather than coexists. Widening this to arbitrary multi-valued
-  facts is a schema change, not a redesign.
-- No confidence decay over time - a belief learned a year ago keeps its
-  confidence until reinforced or contradicted. Decay is on the roadmap
-  but was cut to keep versioning semantics provable in the time
-  available.
-- In zero-key scripted mode, fact extraction uses deliberately conservative
-  rule-based patterns; full natural-language extraction needs the Bedrock
-  or Anthropic mode, where Claude does the extraction instead of regex.
-- The demo intentionally supports one trusted operator and one memory
-  profile. It is not safe for untrusted multi-user deployment: production
-  use needs authentication plus tenant-scoped storage, retrieval, history,
-  and audit APIs, and tests proving cross-tenant denial.
-- The decision audit records what was recalled into the model's context
-  for a reply - its complete provenance - not a claim about the model's
-  internal reasoning. In LLM modes the model can ignore context; the
-  trace still shows exactly what it was shown, which is the auditable
-  part.
+- Multi-user isolation: authentication plus tenant-scoped storage,
+  retrieval, history, and audit APIs.
+- Arbitrary multi-valued subjects (today a fixed allowlist:
+  `user.preference`, `user.health`, `conversation.summary`).
+- Confidence decay over time for beliefs that are never reinforced.
+- Wider zero-key extraction. Scripted mode uses conservative rule-based
+  patterns; the Bedrock and Anthropic modes already do full
+  natural-language extraction.
 
 ## Project structure
 
