@@ -151,45 +151,77 @@ PAGE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <title>Unforgettable</title>
 <style>
-  body { margin: 0; font-family: system-ui, sans-serif; background: #10141a;
-         color: #e6e8eb; display: flex; height: 100vh; }
-  #chat { flex: 3; display: flex; flex-direction: column; padding: 16px; }
-  #side { flex: 2; border-left: 1px solid #2a3038; padding: 16px;
-          overflow-y: auto; font-size: 13px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", "Source Sans Pro",
+         Roboto, sans-serif; background: #f7f8fa; color: #242a35;
+         display: flex; flex-direction: column; height: 100vh; }
+  #top { background: #1b1e23; color: #ffffff; padding: 10px 20px;
+         display: flex; align-items: baseline; gap: 12px; flex: none; }
+  #top .brand { font-size: 15px; font-weight: 600; letter-spacing: 0.2px; }
+  #top .sub { font-size: 12px; color: #9aa4b2; }
+  #main { display: flex; flex: 1; min-height: 0; }
+  #chat { flex: 3; display: flex; flex-direction: column; padding: 20px;
+          min-width: 0; }
+  #side { flex: 2; border-left: 1px solid #e7ecf3; background: #ffffff;
+          padding: 16px 20px; overflow-y: auto; font-size: 13px; }
   #log { flex: 1; overflow-y: auto; padding-right: 8px; }
-  .msg { margin: 8px 0; padding: 10px 12px; border-radius: 8px;
-         max-width: 80%; white-space: pre-wrap; }
-  .msg .time { display: block; font-size: 10px; color: #9fb3c8;
-               opacity: 0.8; margin-top: 6px; text-align: right; }
-  .user { background: #2b6cb0; margin-left: auto; }
-  .agent { background: #1f242c; cursor: pointer; }
-  .agent:hover { outline: 1px solid #4a5361; }
-  #bar { display: flex; gap: 8px; margin-top: 12px; }
-  #input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid
-           #2a3038; background: #171c23; color: #e6e8eb; }
-  button { padding: 8px 14px; border: 0; border-radius: 6px;
-           background: #2b6cb0; color: white; cursor: pointer; }
-  h1 { font-size: 18px; margin: 0 0 8px 0; }
-  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
-       color: #8a93a0; margin: 18px 0 6px 0; }
-  .item { padding: 6px 8px; background: #171c23; border-radius: 6px;
-          margin: 4px 0; }
-  .score, .note { color: #8a93a0; }
-  .learned { border-left: 3px solid #48bb78; }
-  .revised { border-left: 3px solid #ecc94b; }
-  .retired { border-left: 3px solid #f56565; text-decoration: line-through; }
-  #node { font-weight: bold; color: #63b3ed; }
-  input[type=datetime-local] { background: #171c23; color: #e6e8eb;
-    border: 1px solid #2a3038; border-radius: 6px; padding: 6px; }
-  .row { display: flex; gap: 6px; margin: 4px 0; flex-wrap: wrap; }
+  .msg { margin: 10px 0; padding: 10px 14px; border-radius: 6px;
+         max-width: 80%; white-space: pre-wrap; font-size: 14px;
+         line-height: 1.45; }
+  .msg .time { display: block; font-size: 10px; margin-top: 6px;
+               text-align: right; font-family: ui-monospace, Consolas,
+               monospace; color: #8b93a2; }
+  .user { background: #eef0ff; border: 1px solid #dfe3ff;
+          margin-left: auto; }
+  .agent { background: #ffffff; border: 1px solid #e7ecf3; cursor: pointer; }
+  .agent:hover { border-color: #6933ff; box-shadow: 0 1px 4px
+                 rgba(105, 51, 255, 0.10); }
+  #bar { display: flex; gap: 8px; margin-top: 14px; }
+  #input { flex: 1; padding: 10px 12px; border-radius: 4px;
+           border: 1px solid #d6dbe7; background: #ffffff; color: #242a35;
+           font-size: 14px; }
+  #input:focus { outline: 2px solid #6933ff33; border-color: #6933ff; }
+  button { padding: 7px 14px; border: 1px solid #6933ff; border-radius: 4px;
+           background: #6933ff; color: white; cursor: pointer;
+           font-size: 13px; font-weight: 600; }
+  button:hover { background: #5628d6; }
+  #side button { background: #ffffff; color: #34405c;
+                 border: 1px solid #d6dbe7; font-weight: 400; }
+  #side button:hover { border-color: #6933ff; color: #6933ff;
+                       background: #ffffff; }
+  .note { color: #57606a; font-size: 13px; line-height: 1.5; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+       color: #7a8494; margin: 20px 0 8px 0; font-weight: 600; }
+  h2:first-child { margin-top: 4px; }
+  .item { padding: 8px 10px; background: #ffffff; border: 1px solid #e7ecf3;
+          border-radius: 4px; margin: 6px 0; font-size: 13px;
+          line-height: 1.45; }
+  .score { color: #8b93a2; font-size: 12px; }
+  .learned { border-left: 3px solid #00a86b; background: #f2fbf7; }
+  .revised { border-left: 3px solid #d97706; background: #fffaf2; }
+  .retired { border-left: 3px solid #dc2626; background: #fdf5f5;
+             text-decoration: line-through; }
+  #node { display: inline-block; padding: 1px 8px; border-radius: 3px;
+          background: #e6f7ee; color: #027a48; font-size: 11px;
+          font-weight: 600; text-transform: uppercase;
+          letter-spacing: 0.5px; }
+  input[type=datetime-local] { background: #ffffff; color: #242a35;
+    border: 1px solid #d6dbe7; border-radius: 4px; padding: 6px;
+    font-size: 12px; }
+  .row { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
 </style>
 </head>
 <body>
+<div id="top">
+  <span class="brand">Unforgettable</span>
+  <span class="sub">agent memory on CockroachDB - rewind, diff, audit</span>
+</div>
+<div id="main">
 <div id="chat">
-  <h1>Unforgettable</h1>
-  <div class="note">An agent whose entire memory is rows in CockroachDB.
-  Rewind its beliefs to any moment, diff what changed, click a reply to see
-  why it said that - and kill a database node without losing a thing.</div>
+  <div class="note">Talk to the agent as the client. Every belief it forms
+  is a versioned row: rewind them to any moment, diff what changed, click a
+  reply to see what informed it - and a database node can die without
+  losing a thing.</div>
   <div id="log"></div>
   <div id="bar">
     <input id="input" placeholder="Say something the agent should remember..."
@@ -223,6 +255,7 @@ PAGE = """<!DOCTYPE html>
   for it.</div>
   <h2 id="paneltitle">Recalled this turn</h2>
   <div id="panel" class="note">Nothing yet.</div>
+</div>
 </div>
 <script>
 let conversationId = null;
