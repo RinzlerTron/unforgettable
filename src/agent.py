@@ -82,8 +82,11 @@ class Agent:
     def new_conversation(self, title=""):
         return self.store.create_conversation(title)
 
-    def turn(self, conversation_id, user_text):
-        """Run one full agent turn; returns a dict with reply and trace."""
+    def turn(self, conversation_id, user_text, client=None):
+        """Run one full agent turn; returns a dict with reply and trace.
+        `client` overrides the configured LLM for this turn (the public
+        demo swaps in the scripted client past its daily spend ceiling)."""
+        client = client or self.client
         user_text = (user_text or "").strip()
         if not user_text:
             raise ValueError("empty user message")
@@ -92,10 +95,10 @@ class Agent:
 
         episode_id = self.store.add_episode(conversation_id, "user", user_text)
         provenance = {"method": "turn-extraction", "episode_id": episode_id,
-                      "backend": self.client.name}
+                      "backend": client.name}
 
         stored_facts = []
-        for fact in self.client.extract_facts(user_text):
+        for fact in client.extract_facts(user_text):
             fact_id, merged = self.store.add_fact(
                 fact["subject"], fact["content"], fact["confidence"],
                 provenance)
@@ -115,11 +118,11 @@ class Agent:
                     for t in bundle["recent_turns"]
                     if t["role"] in ("user", "assistant")]
         messages.append({"role": "user", "content": user_text})
-        reply = self.client.respond(system, messages, bundle=bundle)
+        reply = client.respond(system, messages, bundle=bundle)
 
         reply_episode_id = self.store.add_episode(
             conversation_id, "assistant", reply,
-            meta={"in_reply_to": episode_id})
+            meta={"in_reply_to": episode_id, "llm": client.name})
 
         # Decision audit: record exactly which memory rows this reply was
         # given, so timetravel.explain_reply() can show what informed it.

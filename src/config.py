@@ -85,6 +85,12 @@ CONSOLIDATE_BATCH = 200
 WEB_HOST = _env("MEM_WEB_HOST", "127.0.0.1")
 WEB_PORT = int(_env("MEM_WEB_PORT", "8400"))
 
+# Public-demo cost ceiling: after this many LLM-backed replies per UTC day,
+# the web endpoint serves the deterministic scripted client instead (and
+# says so in the API response). 0 disables the cap; it only applies when a
+# paid LLM backend is configured, so local zero-key runs are unaffected.
+DEMO_DAILY_LLM_REPLIES = int(_env("MEM_DEMO_DAILY_LLM_REPLIES", "0"))
+
 
 def setup_logging(level=logging.INFO):
     """Configure root logging once, idempotently."""

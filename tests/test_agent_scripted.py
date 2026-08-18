@@ -2,6 +2,8 @@
 
 import json
 
+import config
+import web
 from agent import Agent, public_db_target
 from conftest import FIXTURES
 
@@ -70,6 +72,28 @@ def test_status_reports_node_and_counts(database):
                                      "open_tasks"}
     # The status endpoint is public: it must never echo credentials.
     assert "@" not in status["url"]
+
+
+def test_daily_llm_cap_falls_back_to_scripted(database, monkeypatch):
+    """Past the daily ceiling the web endpoint swaps in the scripted
+    client - the public demo's spend cap is enforced in code."""
+    agent = Agent(database=database)
+    conversation_id = agent.new_conversation("cap test")
+    monkeypatch.setattr(config, "LLM_BACKEND", "bedrock")
+    monkeypatch.setattr(config, "DEMO_DAILY_LLM_REPLIES", 2)
+    for i in range(2):
+        agent.store.add_episode(conversation_id, "assistant",
+                                "reply {0}".format(i),
+                                meta={"llm": "bedrock"})
+
+    client, capped = web.client_for_turn(agent)
+    assert capped
+    assert client.name == "scripted"
+
+    monkeypatch.setattr(config, "DEMO_DAILY_LLM_REPLIES", 10)
+    client, capped = web.client_for_turn(agent)
+    assert not capped
+    assert client is agent.client
 
 
 def test_public_db_target_never_leaks_credentials():

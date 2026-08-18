@@ -67,7 +67,7 @@ Play the compliance scenario from the pitch above, as the client:
    were recalled into its context and which message taught each fact -
    the "what did it believe when it answered" record, from SQL.
 
-Manual fallback: `./run.sh test` (49 tests, self-starts a disposable
+Manual fallback: `./run.sh test` (50 tests, self-starts a disposable
 CockroachDB node). Default mode is `MEM_LLM=off` - a deterministic
 scripted client that exercises the full memory pipeline; set
 `MEM_LLM=bedrock` for Claude on AWS Bedrock (see docs/DEPLOYMENT.md).
@@ -120,7 +120,7 @@ turn-by-turn sequence diagram in
 | Node killed mid-conversation | 0 memories lost; failover on the next statement (chaos demo asserts it) |
 | Time travel | Belief state at any past moment; AS OF SYSTEM TIME inside the GC window, append-only version reconstruction beyond it |
 | Decision audit | Every reply traceable to the memory rows recalled for it and the messages that taught them |
-| Test suite | 49 tests against a real CockroachDB node |
+| Test suite | 50 tests against a real CockroachDB node |
 | Keys needed for the local demo | none (scripted mode + local embeddings) |
 
 The console in action (all four are live captures of `./run.sh web`):
@@ -152,7 +152,7 @@ served by AS OF SYSTEM TIME.*
 | Agentic Memory Design | Episodic + semantic + task memory with confidence and provenance; consolidation job distills episodes into beliefs; append-only versioning makes belief history first-class |
 | Technical Implementation | Native AS OF SYSTEM TIME, vector indexes, JSONB provenance, SQLSTATE 40001 retries, multi-node client failover, transactional versioning |
 | Real-World Impact | Memory audit and debugging: "what did the agent believe when it did that, and why" - the missing tool for agents in production |
-| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only (and never echoed by the status API), 49 tests |
+| Production Readiness | Chaos-tested node failure, retry/backoff, validation before persist, schema bootstrap idempotent, secrets via env only (and never echoed by the status API), 50 tests |
 | Creativity & Originality | Time-travel memory: rewind, belief diff, and per-reply decision audit built directly on CockroachDB primitives |
 
 ## Scope and future work
@@ -188,7 +188,7 @@ model's internal reasoning. Future iterations:
     ├── chat_cli.py      # terminal chat
     └── web.py           # web chat + time-travel console
     tools/               # chaos_demo.py, ccloud_deploy.sh, MCP config
-    tests/               # 49 tests + fixtures (real saved inputs)
+    tests/               # 50 tests + fixtures (real saved inputs)
     docs/                # ARCHITECTURE.md, DEPLOYMENT.md
 
 ## Author

@@ -27,6 +27,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 import config
+import llm
 import timetravel
 from agent import Agent
 
@@ -53,6 +54,33 @@ def get_agent():
     return _agent
 
 
+_fallback_client = None
+
+
+def llm_replies_today(database):
+    """LLM-backed replies since UTC midnight (the daily spend meter)."""
+    row = database.execute(
+        "SELECT count(*) FROM episodes WHERE role = 'assistant'"
+        " AND created_at >= date_trunc('day', now())"
+        " AND meta->>'llm' != 'scripted'", fetch="one")
+    return int(row[0])
+
+
+def client_for_turn(agent):
+    """The paid LLM client, or the scripted one past the daily ceiling.
+    Returns (client, capped). The ceiling only applies when a paid
+    backend is configured; 0 disables it."""
+    global _fallback_client
+    cap = config.DEMO_DAILY_LLM_REPLIES
+    if cap <= 0 or config.LLM_BACKEND == "off":
+        return agent.client, False
+    if llm_replies_today(agent.db) < cap:
+        return agent.client, False
+    if _fallback_client is None:
+        _fallback_client = llm.ScriptedClient()
+    return _fallback_client, True
+
+
 class ChatRequest(BaseModel):
     message: str
     conversation_id: str | None = None
@@ -62,10 +90,16 @@ class ChatRequest(BaseModel):
 def chat(request: ChatRequest):
     agent = get_agent()
     with _turn_lock:
+        client, capped = client_for_turn(agent)
         conversation_id = request.conversation_id
         if not conversation_id or not agent.store.conversation_exists(conversation_id):
             conversation_id = agent.new_conversation(title="web session")
-        result = agent.turn(conversation_id, request.message)
+        result = agent.turn(conversation_id, request.message, client=client)
+    result["llm_mode"] = client.name
+    if capped:
+        result["note"] = ("daily LLM budget reached; replies come from the "
+                          "deterministic scripted client until UTC midnight "
+                          "- memory, time travel, and audit work identically")
     result["conversation_id"] = conversation_id
     try:
         node_id, _ = agent.db.node_info()
