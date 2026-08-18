@@ -355,7 +355,7 @@ async function send() {
     conversationId = data.conversation_id;
     add("agent", data.reply, data.reply_episode_id);
     document.getElementById("node").textContent =
-      data.node_id === null ? "?" : "node " + data.node_id;
+      data.node_id === null ? "cloud" : "node " + data.node_id;
     renderRecalled(data.recalled);
     refreshTotals();
     setTimeout(refreshBeliefs, 2100);
@@ -449,9 +449,9 @@ async function explain(episodeId) {
 async function refreshTotals() {
   const response = await fetch("/api/status");
   const s = await response.json();
-  if (s.node_id !== null && s.node_id !== undefined) {
-    document.getElementById("node").textContent = "node " + s.node_id;
-  }
+  document.getElementById("node").textContent =
+    (s.node_id === null || s.node_id === undefined)
+      ? "cloud" : "node " + s.node_id;
   document.getElementById("totals").textContent =
     " - " + s.counts.episodes + " episodes, " + s.counts.facts +
     " beliefs (" + s.counts.fact_versions + " versions), " +

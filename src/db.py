@@ -186,6 +186,11 @@ class Database:
     # -- diagnostics -----------------------------------------------------
 
     def node_info(self):
-        """Return (node_id, url_index) of the currently connected node."""
-        row = self.execute("SELECT crdb_internal.node_id()", fetch="one")
-        return row[0], self._url_index
+        """Return (node_id, url_index) of the currently connected node.
+        node_id is None on CockroachDB Cloud, which restricts
+        crdb_internal - the UI shows the cluster as "cloud" instead."""
+        try:
+            row = self.execute("SELECT crdb_internal.node_id()", fetch="one")
+            return row[0], self._url_index
+        except psycopg.Error:
+            return None, self._url_index
