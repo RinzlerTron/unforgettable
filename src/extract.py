@@ -60,7 +60,7 @@ _CLAUSE_STOP_WORDS = {"and", "but", "or", "so", "because", "while", "since",
 # last month" -> Chennai). Task titles keep them ("renew my passport
 # next week" is the whole task).
 _TIME_STOP_WORDS = {"last", "next", "this", "yesterday", "today",
-                    "tomorrow", "recently"}
+                    "tomorrow", "recently", "now"}
 _VALUE_STOP_WORDS = _CLAUSE_STOP_WORDS | _TIME_STOP_WORDS
 
 

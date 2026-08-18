@@ -5,32 +5,31 @@
 An AI agent whose memory you can rewind, diff, and audit - built for the
 CockroachDB x AWS Hackathon: Build with Agentic Memory.
 
-Agents forget, and worse: when they misbehave, nobody can say what they
-believed at the moment they acted. Take a wealth-advisory chatbot that
-tells a client on Monday their portfolio matches a conservative risk
-tolerance, then on Thursday recommends a high-volatility product. The
-client complains, and compliance has to reconstruct what the agent
-believed about that client's risk profile at each moment - today that
-means grepping prompt logs with no ground truth. With Unforgettable it's
-`beliefs_at(Monday 10:02)` vs `beliefs_at(Thursday 15:41)`, a `belief_diff`
-showing exactly which belief flipped and which message taught it, and
-`explain_reply` tracing each answer to the memory rows behind it - under a
-minute, from SQL. Memory systems like MemGPT/Letta, Zep, and mem0 focus
-on what an agent remembers now; Unforgettable's contribution is the
-queryable, diffable belief history - what it believed then, what changed,
-and why - built on CockroachDB's `AS OF SYSTEM TIME` and multi-node
-resilience. Unforgettable keeps an agent's
-entire memory - episodes, versioned beliefs, tasks, and a per-reply
-decision audit - as SQL rows in CockroachDB, so you can time-travel to
-any past belief state (`AS OF SYSTEM TIME` + append-only versions), diff
-exactly which belief flipped between two answers, trace any reply to the
-message that taught it, and kill a database node mid-conversation without
-losing a thing.
+Unforgettable stores an agent's conversations, extracted beliefs, tasks,
+and retrieval traces as SQL rows in CockroachDB. Beliefs are versioned,
+never overwritten, so you can inspect what the agent believed at any past
+moment, diff two belief states, trace a reply back to its supporting
+memories - and kill a database node mid-conversation without losing a
+thing.
 
-## Try it
+Why that matters: a wealth-advisory chatbot tells a client on Monday
+their portfolio matches a conservative risk tolerance, then on Thursday
+recommends a high-volatility product. Compliance now has to reconstruct
+what the agent believed about that client at each moment - today that
+means grepping prompt logs with no ground truth. Here it is
+`beliefs_at(Monday 10:02)` vs `beliefs_at(Thursday 15:41)`, a
+`belief_diff` showing which belief flipped and which message taught it,
+and `explain_reply` listing the memory rows behind the answer - from SQL.
+
+Memory systems like MemGPT/Letta, Zep, and mem0 focus on what an agent
+remembers now; Unforgettable adds the queryable, diffable belief history
+- what it believed then, what changed, and why - built on CockroachDB's
+`AS OF SYSTEM TIME` and multi-node resilience.
+
+## Try It (For Judges)
 
 Running locally in about 3 minutes, zero accounts or keys. Each step says
-what it does; nothing installs system-wide or runs unseen:
+what it does:
 
     # 1) CockroachDB binary - one tarball, extracted into this directory
     #    (macOS/Windows tarballs: cockroachlabs.com/docs/releases)
@@ -41,7 +40,7 @@ what it does; nothing installs system-wide or runs unseen:
     git clone <repo-url> unforgettable && cd unforgettable
     ./run.sh setup
 
-    # 3) The headline demo: starts a local 3-node cluster, holds a
+    # 3) The main demo: starts a local 3-node cluster, holds a
     #    conversation, SIGKILLs the node the agent is talking to, then
     #    proves row-exact memory survival and time travel across the
     #    failure. Ends with "RESULT: PASS" and tears the cluster down.
@@ -122,22 +121,22 @@ turn-by-turn sequence diagram in
 | Time travel | Belief state at any past moment; AS OF SYSTEM TIME inside the GC window, append-only version reconstruction beyond it |
 | Decision audit | Every reply traceable to the memory rows recalled for it and the messages that taught them |
 | Test suite | 49 tests against a real CockroachDB node |
-| Keys needed for the full demo | none (scripted mode + local embeddings) |
+| Keys needed for the local demo | none (scripted mode + local embeddings) |
 
 The console in action (all four are live captures of `./run.sh web`):
 
 *Teach it facts; every belief shows when it started being true.*
 ![Chat with the current-beliefs panel](docs/img/1-chat-and-beliefs.png)
 
-*"Actually I moved to Chennai" — the diff shows exactly which belief
-flipped, with before/after confidence.*
+*"Actually, my risk tolerance is aggressive now" - the diff shows exactly
+which belief flipped, with before/after confidence.*
 ![Belief diff after a flip](docs/img/2-belief-diff.png)
 
 *Click any reply: which memory rows were recalled for it, and which
 message taught each fact.*
 ![Per-reply decision audit](docs/img/3-decision-audit.png)
 
-*Rewind to before the move: the agent's Singapore-era belief state,
+*Rewind to before the change: the agent's conservative-era belief state,
 served by AS OF SYSTEM TIME.*
 ![Time-travel rewind](docs/img/4-time-travel-rewind.png)
 
@@ -148,7 +147,7 @@ served by AS OF SYSTEM TIME.*
 | CockroachDB as persistent memory layer | All memory is SQL rows: `episodes`, `facts`, `tasks`, `recall_traces` (src/schema.sql); the agent process is stateless |
 | CockroachDB tool 1: Distributed Vector Indexing | `VECTOR(256)` columns + partial prefix vector indexes on episodes and facts, shaped so the planner actually serves every recall from them; a test asserts the EXPLAIN plan says `vector search`, never `FULL SCAN` (src/db.py, src/recall.py, tests/test_recall_ranking.py) |
 | CockroachDB tool 2: ccloud CLI | `tools/ccloud_deploy.sh` provisions the cluster, SQL user, and connection URL end to end |
-| CockroachDB tool 3: Managed MCP Server | `tools/mcp_config.example.json` connects Claude Code/Cursor to the memory cluster read-only, so judges can inspect the agent's beliefs live |
+| CockroachDB tool 3: Managed MCP Server | `tools/mcp_config.example.json` - ready-made config for read-only inspection of the memory cluster from Claude Code/Cursor (see docs/DEPLOYMENT.md) |
 | AWS service: Amazon Bedrock | Claude via the Converse API + Titan Text Embeddings V2 (src/llm.py, src/embeddings.py); agent hosts on EC2/ECS (docs/DEPLOYMENT.md) |
 | Agentic Memory Design | Episodic + semantic + task memory with confidence and provenance; consolidation job distills episodes into beliefs; append-only versioning makes belief history first-class |
 | Technical Implementation | Native AS OF SYSTEM TIME, vector indexes, JSONB provenance, SQLSTATE 40001 retries, multi-node client failover, transactional versioning |
@@ -161,7 +160,7 @@ served by AS OF SYSTEM TIME.*
 The current release supports one trusted operator with one memory
 profile; the decision audit records what was recalled into the model's
 context for each reply - its complete provenance - rather than the
-model's internal reasoning. Natural directions from here:
+model's internal reasoning. Future iterations:
 
 - Multi-user isolation: authentication plus tenant-scoped storage,
   retrieval, history, and audit APIs.
