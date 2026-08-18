@@ -78,9 +78,9 @@ def test_live_conversation_cannot_crowd_out_past_memories(database):
 
 def test_vector_index_serves_recall_queries(database):
     """The distributed vector index must actually serve the recall
-    queries: EXPLAIN must say "vector search", never FULL SCAN. This is
-    the check a skeptical judge would run - an index that exists but is
-    not in the plan is decoration, not infrastructure."""
+    queries: EXPLAIN must say "vector search", never FULL SCAN. An index
+    that exists but is not in the plan is decoration, not
+    infrastructure."""
     store = MemoryStore(database)
     conversation_id = store.create_conversation("t")
     for i in range(10):

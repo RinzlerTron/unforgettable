@@ -1,5 +1,5 @@
 {
-  "_comment": "CockroachDB Cloud managed MCP server config, matching the Cloud Console's Connect > MCP dialog. Copy into your MCP client config (Claude Code: .mcp.json; Cursor: mcp.json), replace <your-cluster-id> with the cluster id from that dialog, then authenticate via the OAuth flow the client starts (browser opens; pick read-only). Useful judge trick: ask your MCP-connected editor 'show the facts table in the unforgettable database' and watch the agent's beliefs, provenance included.",
+  "_comment": "CockroachDB Cloud managed MCP config. Copy into your MCP client config (Claude Code: .mcp.json; Cursor: mcp.json), set <your-cluster-id> from the Cloud Console's Connect > MCP dialog, then authenticate via the OAuth flow (pick read-only). Try: 'show the facts table in the unforgettable database'.",
   "mcpServers": {
     "cockroachdb-cloud": {
       "type": "http",
