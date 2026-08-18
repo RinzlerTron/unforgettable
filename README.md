@@ -81,7 +81,7 @@ flowchart LR
     subgraph AGENT["Agent process (Python, stateless)"]
         direction TB
         RC["recall.py<br/>vector + keyword + recency"]
-        LL["llm.py<br/>Bedrock | Anthropic | scripted"]
+        LL["llm.py - swappable LLM backend:<br/>Bedrock Claude, Anthropic API,<br/>or zero-key scripted mode"]
         MS["memory_store.py<br/>validated, versioned writes"]
         TT["timetravel.py<br/>beliefs_at / diff / explain"]
     end
