@@ -37,7 +37,7 @@ what it does:
     export PATH="$PWD/cockroach-v25.2.2.linux-amd64:$PATH"
 
     # 2) The project + pinned dependencies, in a project-local venv
-    git clone <repo-url> unforgettable && cd unforgettable
+    git clone https://github.com/RinzlerTron/unforgettable unforgettable && cd unforgettable
     ./run.sh setup
 
     # 3) The main demo: starts a local 3-node cluster, holds a

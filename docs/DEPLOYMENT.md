@@ -13,7 +13,7 @@ Prerequisites: Python 3.10+, curl.
     export PATH="$PWD/cockroach-v25.2.2.linux-amd64:$PATH"
 
     # 2. Project
-    git clone <this repo> unforgettable && cd unforgettable
+    git clone https://github.com/RinzlerTron/unforgettable unforgettable && cd unforgettable
     ./run.sh setup
 
     # 3. The resilience + time-travel showcase (starts its own 3-node
@@ -34,7 +34,7 @@ client exercises the full memory pipeline deterministically.
 
 Prerequisites: Docker with the compose plugin.
 
-    git clone <this repo> unforgettable && cd unforgettable
+    git clone https://github.com/RinzlerTron/unforgettable unforgettable && cd unforgettable
     docker compose up --build     # agent + one CockroachDB node
                                   # web UI: http://localhost:8400
 
